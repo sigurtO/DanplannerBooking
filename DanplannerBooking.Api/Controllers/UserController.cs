@@ -107,7 +107,7 @@ namespace DanplannerBooking.Api.Controllers
 
         //Delete api/user/{id}
         [HttpDelete("{id}")]
-        [Authorize(Policy = "AdminOnly")]
+       // [Authorize(Policy = "AdminOnly")]
         public async Task<ActionResult> DeleteUser(Guid id)
         {
             var result = await _userRepository.DeleteAsync(id);
