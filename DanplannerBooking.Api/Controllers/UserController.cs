@@ -29,7 +29,7 @@ namespace DanplannerBooking.Api.Controllers
             return Ok(users);
         }
 
-        [HttpGet]
+        [HttpGet("{id}")]
         public async Task<ActionResult<UserResponseDto>> GetUserById(Guid id)
         {
             var user = await _userRepository.GetByIdAsync(id);
