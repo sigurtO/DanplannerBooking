@@ -1,0 +1,139 @@
+﻿@page "/users"
+@inject HttpClient Http
+
+<h3>All Users</h3>
+
+@if (users == null)
+{
+    <p>Loading users...</p>
+}
+else if (users.Count == 0)
+{
+    <p>No users found.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>User Name</th>
+                <th>Email</th>
+                <th>Account Type</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in users)
+            {
+                <tr>
+                    <td>@user.Name</td>
+                    <td>@user.Email</td>
+                    <td>@(user.IsAdmin ? "Admin" : "User")</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm" @onclick="() => EditUser(user)">Update</button>
+                        <button class="btn btn-danger btn-sm" @onclick="() => DeleteUser(user.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (editUser != null)
+{
+    <h4>Edit User</h4>
+    <EditForm Model="@editUser" OnValidSubmit="HandleUpdate">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div>
+            <label>Name:</label>
+            <InputText @bind-Value="editUser.Name" class="form-control" />
+        </div>
+
+        <div>
+            <label>Email:</label>
+            <InputText @bind-Value="editUser.Email" class="form-control" />
+        </div>
+
+        <div>
+            <label>Phone:</label>
+            <InputText @bind-Value="editUser.Phone" class="form-control" />
+        </div>
+
+        <div>
+            <label>Country:</label>
+            <InputText @bind-Value="editUser.Country" class="form-control" />
+        </div>
+
+        <div>
+            <label>Language:</label>
+            <InputText @bind-Value="editUser.Language" class="form-control" />
+        </div>
+
+        <button type="submit" class="btn btn-success">Save Changes</button>
+        <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+    </EditForm>
+}
+
+@code {
+    private List<UserResponseDto> users;
+    private AdminUpdateUserDto editUser;
+    private Guid editingUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = await Http.GetFromJsonAsync<List<UserResponseDto>>("api/user");
+    }
+
+    private async Task DeleteUser(Guid userId)
+    {
+        var response = await Http.DeleteAsync($"api/user/{userId}");
+        if (response.IsSuccessStatusCode)
+        {
+            users = users.Where(u => u.Id != userId).ToList();
+        }
+    }
+
+    private void EditUser(UserResponseDto user)
+    {
+        editingUserId = user.Id;
+        editUser = new AdminUpdateUserDto
+        {
+            Name = user.Name,
+            Email = user.Email,
+            Phone = user.Phone,
+            Country = user.Country,
+            Language = user.Language,
+            IsAdmin = user.IsAdmin
+        };
+    }
+
+    private async Task HandleUpdate()
+    {
+        var response = await Http.PutAsJsonAsync($"api/user/{editingUserId}", editUser);
+        if (response.IsSuccessStatusCode)
+        {
+            var index = users.FindIndex(u => u.Id == editingUserId);
+            if (index != -1)
+            {
+                users[index] = new UserResponseDto(
+                    editingUserId,
+                    editUser.Name,
+                    editUser.Email,
+                    editUser.Phone,
+                    editUser.Country,
+                    editUser.Language,
+                    users[index].IsAdmin // preserve admin flag
+                );
+
+            }
+            editUser = null;
+        }
+    }
+
+    private void CancelEdit()
+    {
+        editUser = null;
+    }
+}
