@@ -8,10 +8,10 @@ namespace DanplannerBooking.Domain.Entities.JoinTable
 {
     public class BookingAddOn
     {
-        public int BookingId { get; set; }
+        public Guid BookingId { get; set; }
         public Booking Booking { get; set; }
 
-        public int AddOnId { get; set; }
+        public Guid AddOnId { get; set; }
         public AddOn AddOn { get; set; }
     }
 }

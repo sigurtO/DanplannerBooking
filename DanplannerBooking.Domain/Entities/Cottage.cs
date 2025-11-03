@@ -3,6 +3,7 @@
     public class Cottage
     {
         public Guid Id { get; set; }
+        public Guid CampsiteId { get; set; }
         public string Name { get; set; }
         public string Location { get; set; }
         public string Description { get; set; }
@@ -15,7 +16,7 @@
         public bool HasWiFi { get; set; }
 
         public bool IsAvailable { get; set; }
-        public decimal Price { get; set; }
+        public decimal PricePerNight { get; set; }
         public string ImageUrl { get; set; }
     }
 

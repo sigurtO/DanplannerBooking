@@ -9,10 +9,10 @@ namespace DanplannerBooking.Domain.Entities
         public decimal BasePrice { get; set; }
         public decimal Discount { get; set; }
 
-        public int? CottageId { get; set; }
+        public Guid? CottageId { get; set; }
         public Cottage Cottage { get; set; }
 
-        public int? SpaceId { get; set; }
+        public Guid? SpaceId { get; set; }
         public Space Space { get; set; }
 
         public ICollection<BundleAddOn> BundleAddOns { get; set; }

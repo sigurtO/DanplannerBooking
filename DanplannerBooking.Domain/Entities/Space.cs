@@ -3,7 +3,7 @@
     public class Space
     {
         public Guid Id { get; set; }
-        public int CampsiteId { get; set; }
+        public Guid CampsiteId { get; set; }
         public Campsite Campsite { get; set; }
 
         public bool HasElectricity { get; set; }
@@ -15,7 +15,7 @@
         public int? MetersFromOcean { get; set; }
 
         public bool IsAvailable { get; set; }
-        public decimal Price { get; set; }
+        public decimal PricePerNight { get; set; }
         public string ImageUrl { get; set; }
     }
 

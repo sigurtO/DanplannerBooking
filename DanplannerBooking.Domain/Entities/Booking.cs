@@ -1,10 +1,11 @@
-﻿namespace DanplannerBooking.Domain.Entities
+﻿using DanplannerBooking.Domain.Entities.JoinTable;
+namespace DanplannerBooking.Domain.Entities
 {
     public class Booking
     {
-        public int Guid { get; set; }
+        public Guid Id { get; set; }
 
-        public int UserId { get; set; }
+        public Guid UserId { get; set; }
         public User User { get; set; }
 
         public int NumberOfPeople { get; set; }
@@ -14,13 +15,13 @@
         public decimal TotalPrice { get; set; }
         public decimal Discount { get; set; }
 
-        public int? CottageId { get; set; }
+        public Guid? CottageId { get; set; }
         public Cottage Cottage { get; set; }
 
-        public int? SpaceId { get; set; }
+        public Guid? SpaceId { get; set; }
         public Space Space { get; set; }
 
-        public int? BundleId { get; set; }
+        public Guid? BundleId { get; set; }
         public Bundle Bundle { get; set; }
 
         public ICollection<BookingAddOn> BookingAddOns { get; set; }

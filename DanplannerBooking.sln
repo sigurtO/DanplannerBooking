@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36429.23 d17.14
+VisualStudioVersion = 17.14.36429.23
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
@@ -10,6 +10,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DanplannerBooking.Application", "DanplannerBooking.Application\DanplannerBooking.Application.csproj", "{B27158DA-9E50-4406-A127-AFD87BFB3844}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DanplannerBooking.Infrastructure", "DanplannerBooking.Infrastructure\DanplannerBooking.Infrastructure.csproj", "{49108076-4A5F-48E6-A257-A2F77617F7F9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DanplannerBooking.Api", "DanplannerBooking.Api\DanplannerBooking.Api.csproj", "{9915EB32-4F13-4086-8ACC-218FC1C250EA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,6 +31,10 @@ Global
 		{49108076-4A5F-48E6-A257-A2F77617F7F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{49108076-4A5F-48E6-A257-A2F77617F7F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{49108076-4A5F-48E6-A257-A2F77617F7F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9915EB32-4F13-4086-8ACC-218FC1C250EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9915EB32-4F13-4086-8ACC-218FC1C250EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9915EB32-4F13-4086-8ACC-218FC1C250EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9915EB32-4F13-4086-8ACC-218FC1C250EA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
