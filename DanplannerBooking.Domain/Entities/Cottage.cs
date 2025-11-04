@@ -4,9 +4,13 @@
     {
         public Guid Id { get; set; }
         public Guid CampsiteId { get; set; }
-        public string Name { get; set; }
+        public string Name { get; set; } = default!;
         public string Location { get; set; }
         public string Description { get; set; }
+
+        // NEW: editor layout coords (SVG pixel space)
+        public int X { get; set; }  // default 0
+        public int Y { get; set; }  // default 0
 
         // Cottage-specific features
         public bool HasToilet { get; set; }

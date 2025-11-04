@@ -4,8 +4,12 @@
     {
         public Guid Id { get; set; }
         public Guid CampsiteId { get; set; }
-        public Campsite Campsite { get; set; }
+        public string Name { get; set; } = default!;
+        public Campsite Campsite { get; set; } = default!;
 
+        // NEW: layout coordinates
+        public int X { get; set; }  // default 0
+        public int Y { get; set; }  // default 0
         public bool HasElectricity { get; set; }
         public int MetersFromToilet { get; set; }
 

@@ -1,0 +1,180 @@
+﻿@page "/editor"
+@using System.Text.Json
+@inject IJSRuntime JS
+
+<h2>🛠️ Kort-editor</h2>
+<p class="text-muted">Træk markører for at flytte dem. Pan/zoom på baggrunden.</p>
+
+<div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap">
+    <div class="card" style="min-width:280px; max-width:340px">
+        <h3>Værktøjer</h3>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <button class="btn btn-primary" @onclick="AddTent">+ Teltplads</button>
+            <button class="btn btn-primary" @onclick="AddCabin">+ Hytte</button>
+        </div>
+
+        @if (Selected is not null)
+        {
+            <hr />
+            <h4>Valgt</h4>
+            <label>Navn</label>
+            <input @bind="Selected.Name" />
+            <label>Type</label>
+            <select @bind="Selected.ProductType">
+                <option value="Plads">Plads</option>
+                <option value="Hytte">Hytte</option>
+            </select>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <div><label>X</label><input type="number" @bind="Selected.X" /></div>
+                <div><label>Y</label><input type="number" @bind="Selected.Y" /></div>
+            </div>
+            <button class="btn" @onclick="ApplyManualPosition">↻ Opdater</button>
+            <button class="btn" @onclick="DeleteSelected">🗑️ Slet</button>
+        }
+
+        <hr />
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <button class="btn btn-primary" @onclick="ExportJson">⬇️ Export</button>
+            <label class="btn">
+                ⬆️ Import <input type="file" accept="application/json" @onchange="ImportJson" style="display:none" />
+            </label>
+        </div>
+    </div>
+
+    <div id="mapContainer" style="flex:1 1 820px; min-width:760px; height:75vh; border:1px solid #ccc; border-radius:10px; overflow:hidden;">
+        <svg id="campsiteSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1336 768" style="width:100%; height:100%;">
+            <image href="images/campsite.jpg" x="0" y="0" width="1336" height="768" />
+            @foreach (var u in Units)
+            {
+                var isSel = _selectedId == u.Id;
+                var border = isSel ? "stroke-width:3; stroke:#fff" : "stroke-width:2; stroke:#fff";
+                <g class="unit @(u.ProductType == "Hytte" ? "hut" : "tent")"
+                   data-id="@u.Id"
+                   transform="translate(@u.X,@u.Y)"
+                   @onclick="() => _selectedId = u.Id">
+                    @if (u.ProductType == "Hytte")
+                    {
+                        <rect x="-16" y="-12" rx="5" ry="5" width="32" height="24" style="fill:rgba(0,0,255,.55); @border"></rect>
+                        <path d="M-18 -12 L0 -26 L18 -12" style="fill:#0039b3; opacity:.85"></path>
+                    }
+                    else
+                    {
+                        <circle r="12" style="fill:rgba(0,200,0,.6); @border"></circle>
+                    }
+                    <text y="-20" text-anchor="middle" fill="white" font-size="12">@u.Name</text>
+                </g>
+            }
+        </svg>
+    </div>
+</div>
+
+@code {
+    public record EditableUnit
+    {
+        public string Id { get; init; } = Guid.NewGuid().ToString();
+        public string Name { get; set; } = "Plads";
+        public string ProductType { get; set; } = "Plads"; // "Plads" | "Hytte"
+        public int X { get; set; }
+        public int Y { get; set; }
+    }
+
+    private List<EditableUnit> Units = new()
+  {
+    new() { Name = "P-101", ProductType = "Plads", X = 300, Y = 610 },
+    new() { Name = "P-102", ProductType = "Plads", X = 380, Y = 600 },
+    new() { Name = "H-201", ProductType = "Hytte", X = 880, Y = 650 },
+  };
+
+    private string? _selectedId;
+    private EditableUnit? Selected => Units.FirstOrDefault(z => z.Id == _selectedId);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("CampsiteMap.initPanZoom", "#mapContainer", "#campsiteSvg");
+            await JS.InvokeVoidAsync("CampsiteMap.enableDrag", "#campsiteSvg", "g.unit", DotNetObjectReference.Create(this));
+        }
+    }
+
+    [JSInvokable]
+    public Task OnMarkerMoved(string id, int x, int y)
+    {
+        var u = Units.FirstOrDefault(z => z.Id == id);
+        if (u is not null) { u.X = x; u.Y = y; StateHasChanged(); }
+        return Task.CompletedTask;
+    }
+
+    private void AddTent()
+    {
+        var idx = Units.Count(u => u.ProductType == "Plads") + 101;
+        Units.Add(new EditableUnit { Name = $"P-{idx}", ProductType = "Plads", X = 200, Y = 200 });
+    }
+
+    private void AddCabin()
+    {
+        var idx = Units.Count(u => u.ProductType == "Hytte") + 201;
+        Units.Add(new EditableUnit { Name = $"H-{idx}", ProductType = "Hytte", X = 230, Y = 230 });
+    }
+
+    private void DeleteSelected()
+    {
+        if (_selectedId is null) return;
+        Units = Units.Where(u => u.Id != _selectedId).ToList();
+        _selectedId = null;
+    }
+
+    private void ApplyManualPosition() => StateHasChanged();
+
+    private async Task ExportJson()
+    {
+        var json = JsonSerializer.Serialize(Units, new JsonSerializerOptions { WriteIndented = true });
+        await JS.InvokeVoidAsync("CampsiteMap.downloadText", "campsite-layout.json", json);
+    }
+
+    private async Task ImportJson(ChangeEventArgs e)
+    {
+        var file = (Microsoft.AspNetCore.Components.Forms.IBrowserFile?)e.Value;
+        if (file is null) return;
+
+        using var s = file.OpenReadStream(1_048_576); // 1 MB
+        using var reader = new StreamReader(s);
+        var text = await reader.ReadToEndAsync();
+
+        // If the file is a bare array, wrap it to match ImportMapRequest
+        // (Server also accepts the wrapped form directly.)
+        var http = Clients.CreateClient("Api");
+
+        // Try to detect if it's already wrapped
+        var payload = text.TrimStart().StartsWith("{")
+            ? text
+            : $"{{\"createMissing\":true,\"units\":{text}}}";
+
+        var content = new StringContent(payload, System.Text.Encoding.UTF8, "application/json");
+        var resp = await http.PostAsync("api/units/layout/import", content);
+        resp.EnsureSuccessStatusCode();
+
+        // Reload from API to reflect new positions / created items
+        await LoadFromApi();
+    }
+
+    private async Task LoadFromApi()
+    {
+        try
+        {
+            var http = Clients.CreateClient("Api");
+            var data = await http.GetFromJsonAsync<List<EditableUnit>>("api/units") ?? new();
+            Units = data.Select(d => new EditableUnit
+            {
+                Id = d.Id.ToString(),
+                Name = d.Name,
+                ProductType = d.Type == "Cottage" ? "Hytte" : "Plads",
+                X = d.X,
+                Y = d.Y
+            }).ToList();
+            StateHasChanged();
+        }
+        catch { /* show toast if you want */ }
+    }
+}

@@ -31,6 +31,12 @@ namespace DanplannerBooking.Infrastructure.Context
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            
+            // NEW: defaults for layout coords so existing rows get 0,0
+            modelBuilder.Entity<Space>().Property(x => x.X).HasDefaultValue(0);
+            modelBuilder.Entity<Space>().Property(x => x.Y).HasDefaultValue(0);
+            modelBuilder.Entity<Cottage>().Property(x => x.X).HasDefaultValue(0);
+            modelBuilder.Entity<Cottage>().Property(x => x.Y).HasDefaultValue(0);
 
             // Campsite -> Spaces (One-to-Many)
             modelBuilder.Entity<Campsite>()

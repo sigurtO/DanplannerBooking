@@ -1,0 +1,33 @@
+﻿@page "/map"
+@inject IJSRuntime JS
+
+<h2>Pladskort</h2>
+<p class="text-muted">Pan/zoom med musen. Klik på marker for info (demo).</p>
+
+<div id="mapContainer" style="width:100%; max-width:1336px; height:70vh; border:1px solid #ccc; border-radius:10px; overflow:hidden;">
+    <svg id="campsiteSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1336 768" style="width:100%; height:100%;">
+        <!-- Background photo -->
+        <image href="images/campsite.jpg" x="0" y="0" width="1336" height="768" />
+
+        <!-- Demo: a few static markers (replace with your data later) -->
+        <g class="unit tent" data-id="P-101" transform="translate(300,610)" onclick="alert('Plads P-101')">
+            <circle r="12" fill="rgba(0,200,0,.6)" stroke="white" stroke-width="2" />
+            <text y="-20" text-anchor="middle" fill="white" font-size="12">P-101</text>
+        </g>
+        <g class="unit hut" data-id="H-201" transform="translate(880,650)" onclick="alert('Hytte H-201')">
+            <rect x="-16" y="-12" rx="5" ry="5" width="32" height="24" fill="rgba(0,0,255,.55)" stroke="white" stroke-width="2"></rect>
+            <path d="M-18 -12 L0 -26 L18 -12" style="fill:#0039b3; opacity:.85"></path>
+            <text y="-20" text-anchor="middle" fill="white" font-size="12">H-201</text>
+        </g>
+    </svg>
+</div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("CampsiteMap.initPanZoom", "#mapContainer", "#campsiteSvg");
+        }
+    }
+}
