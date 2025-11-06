@@ -15,7 +15,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<DbContextBooking>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddScoped<IUserRepository, UserRepository>(); //dont remeber why we need this but think it's for DI
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ICampsiteRepository, CampsiteRepository>();
+builder.Services.AddScoped<ISpaceRepository, SpaceRepository>();
 
 
 builder.Services.AddAuthorization(options =>  //Dont know if this works just a test but it's used in controller

@@ -1,0 +1,70 @@
+﻿@page "/create-campsite"
+@using DanplannerBooking.Application.Dtos.Campsite
+@inject NavigationManager NavigationManager
+
+<h3>Create New Campsite</h3>
+
+@if (showSuccessMessage)
+{
+    <div class="alert alert-success" role="alert">
+        ✅ Campsite created successfully! Redirecting to campsites page...
+    </div>
+}
+
+<EditForm Model="@newCampsite" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <table class="table table-bordered">
+        <tbody>
+            <tr>
+                <td><label>Name:</label></td>
+                <td><InputText @bind-Value="newCampsite.Name" class="form-control" /></td>
+            </tr>
+            <tr>
+                <td><label>Location:</label></td>
+                <td><InputText @bind-Value="newCampsite.Location" class="form-control" /></td>
+            </tr>
+            <tr>
+                <td><label>Description:</label></td>
+                <td><InputText @bind-Value="newCampsite.Description" class="form-control" /></td>
+            </tr>
+            <tr>
+                <td><label>Ocean Access:</label></td>
+                <td><InputCheckbox @bind-Value="newCampsite.HasOceanAccess" class="form-check-input" /></td>
+            </tr>
+            <tr>
+                <td><label>Pool:</label></td>
+                <td><InputCheckbox @bind-Value="newCampsite.HasPool" class="form-check-input" /></td>
+            </tr>
+            <tr>
+                <td><label>Playground:</label></td>
+                <td><InputCheckbox @bind-Value="newCampsite.HasPlayground" class="form-check-input" /></td>
+            </tr>
+            <tr>
+                <td><label>Car Charger:</label></td>
+                <td><InputCheckbox @bind-Value="newCampsite.HasCarCharger" class="form-check-input" /></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <button type="submit" class="btn btn-success">Create Campsite</button>
+</EditForm>
+
+@code {
+    private CreateCampsiteDto newCampsite = new();
+    private bool showSuccessMessage = false;
+
+    private async Task HandleValidSubmit()
+    {
+        var response = await Http.PostAsJsonAsync("api/campsite", newCampsite);
+        if (response.IsSuccessStatusCode)
+        {
+            newCampsite = new CreateCampsiteDto(); // Clear the form
+            showSuccessMessage = true;
+
+            await Task.Delay(2000);
+            NavigationManager.NavigateTo("/campsites");
+        }
+    }
+}

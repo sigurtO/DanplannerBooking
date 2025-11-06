@@ -1,0 +1,157 @@
+﻿@page "/campsites"
+@using DanplannerBooking.Application.Dtos.Campsite
+
+<h3>All Campsites</h3>
+
+@if (campsites == null)
+{
+    <p>Loading campsites...</p>
+}
+else if (campsites.Count == 0)
+{
+    <p>No campsites found.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Location</th>
+                <th>Description</th>
+                <th>Features</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var site in campsites)
+            {
+                <tr>
+                    <td>@site.Name</td>
+                    <td>@site.Location</td>
+                    <td>@site.Description</td>
+                    <td>
+                        @(site.HasOceanAccess ? "🌊 " : "")
+                        @(site.HasPool ? "🏊 " : "")
+                        @(site.HasPlayground ? "🛝 " : "")
+                        @(site.HasCarCharger ? "🔌 " : "")
+                    </td>
+                    <td>
+                        <button class="btn btn-warning btn-sm" @onclick="() => EditCampsite(site)">Update</button>
+                        <button class="btn btn-danger btn-sm" @onclick="() => DeleteCampsite(site.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (editCampsite != null)
+{
+    <h4>Edit Campsite</h4>
+    <EditForm Model="@editCampsite" OnValidSubmit="HandleUpdate">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div>
+            <label>Name:</label>
+            <InputText @bind-Value="editCampsite.Name" class="form-control" />
+        </div>
+
+        <div>
+            <label>Location:</label>
+            <InputText @bind-Value="editCampsite.Location" class="form-control" />
+        </div>
+
+        <div>
+            <label>Description:</label>
+            <InputText @bind-Value="editCampsite.Description" class="form-control" />
+        </div>
+
+        <div class="form-check">
+            <InputCheckbox @bind-Value="editCampsite.HasOceanAccess" class="form-check-input" />
+            <label class="form-check-label">Ocean Access</label>
+        </div>
+
+        <div class="form-check">
+            <InputCheckbox @bind-Value="editCampsite.HasPool" class="form-check-input" />
+            <label class="form-check-label">Pool</label>
+        </div>
+
+        <div class="form-check">
+            <InputCheckbox @bind-Value="editCampsite.HasPlayground" class="form-check-input" />
+            <label class="form-check-label">Playground</label>
+        </div>
+
+        <div class="form-check">
+            <InputCheckbox @bind-Value="editCampsite.HasCarCharger" class="form-check-input" />
+            <label class="form-check-label">Car Charger</label>
+        </div>
+
+        <button type="submit" class="btn btn-success">Save Changes</button>
+        <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+    </EditForm>
+}
+
+@code {
+    private List<CampsiteResponseDto> campsites;
+    private CreateCampsiteDto editCampsite;
+    private Guid editingCampsiteId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        campsites = await Http.GetFromJsonAsync<List<CampsiteResponseDto>>("api/campsite");
+    }
+
+    private async Task DeleteCampsite(Guid campsiteId)
+    {
+        var response = await Http.DeleteAsync($"api/campsite/{campsiteId}");
+        if (response.IsSuccessStatusCode)
+        {
+            campsites = campsites.Where(c => c.Id != campsiteId).ToList();
+        }
+    }
+
+    private void EditCampsite(CampsiteResponseDto site)
+    {
+        editingCampsiteId = site.Id;
+        editCampsite = new CreateCampsiteDto
+        {
+            Name = site.Name,
+            Location = site.Location,
+            Description = site.Description,
+            HasOceanAccess = site.HasOceanAccess,
+            HasPool = site.HasPool,
+            HasPlayground = site.HasPlayground,
+            HasCarCharger = site.HasCarCharger
+        };
+    }
+
+    private async Task HandleUpdate()
+    {
+        var response = await Http.PutAsJsonAsync($"api/campsite/{editingCampsiteId}", editCampsite);
+        if (response.IsSuccessStatusCode)
+        {
+            var index = campsites.FindIndex(c => c.Id == editingCampsiteId);
+            if (index != -1)
+            {
+                campsites[index] = new CampsiteResponseDto(
+                    editingCampsiteId,
+                    editCampsite.Name,
+                    editCampsite.Location,
+                    editCampsite.Description,
+                    editCampsite.HasOceanAccess,
+                    editCampsite.HasPool,
+                    editCampsite.HasPlayground,
+                    editCampsite.HasCarCharger
+                );
+            }
+            editCampsite = null;
+        }
+    }
+
+    private void CancelEdit()
+    {
+        editCampsite = null;
+    }
+}

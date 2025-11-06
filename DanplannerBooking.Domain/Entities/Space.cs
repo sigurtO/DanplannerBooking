@@ -1,6 +1,6 @@
 ﻿namespace DanplannerBooking.Domain.Entities
 {
-    public class Space
+    public class Space //add name to space GODDAMNIT
     {
         public Guid Id { get; set; }
         public Guid CampsiteId { get; set; }
