@@ -41,7 +41,7 @@
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
             <button class="btn btn-primary" @onclick="ExportJson">⬇️ Export</button>
             <label class="btn">
-                ⬆️ Import <input type="file" accept="application/json" @onchange="ImportJson" style="display:none" />
+                ⬆️ Import <InputFile OnChange="ImportJson" accept=".json,.txt,application/json" class="ms-2" />
             </label>
         </div>
     </div>
@@ -137,26 +137,29 @@
         await JS.InvokeVoidAsync("CampsiteMap.downloadText", "campsite-layout.json", json);
     }
 
-    private async Task ImportJson(ChangeEventArgs e)
+    private async Task ImportJson(InputFileChangeEventArgs e)
     {
-        var file = (Microsoft.AspNetCore.Components.Forms.IBrowserFile?)e.Value;
+        var file = e.File;                    // <— use e.File (or e.GetMultipleFiles())
         if (file is null) return;
 
-        using var s = file.OpenReadStream(1_048_576); // 1 MB
-        using var reader = new StreamReader(s);
+        using var stream = file.OpenReadStream(maxAllowedSize: 1_048_576);
+        using var reader = new StreamReader(stream);
         var text = await reader.ReadToEndAsync();
 
-        // If it's a bare array, wrap it for ImportMapRequest
+        // Wrap if user uploaded a bare array
         var payload = text.TrimStart().StartsWith("{")
             ? text
             : $"{{\"createMissing\":true,\"units\":{text}}}";
 
         var content = new StringContent(payload, System.Text.Encoding.UTF8, "application/json");
+
+        // post to API
         var resp = await Http.PostAsync("api/units/layout/import", content);
         resp.EnsureSuccessStatusCode();
 
-        await LoadFromApi();
+        await LoadFromApi();                  // refresh markers from DB
     }
+
 
     private async Task LoadFromApi()
     {

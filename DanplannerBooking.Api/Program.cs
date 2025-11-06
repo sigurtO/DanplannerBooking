@@ -5,57 +5,47 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
-
-
+// Services
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddDbContext<DbContextBooking>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddScoped<IUserRepository, UserRepository>(); //dont remeber why we need this but think it's for DI
+builder.Services.AddDbContext<DbContextBooking>(opt =>
+    opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
-builder.Services.AddAuthorization(options =>  //Dont know if this works just a test but it's used in controller
+builder.Services.AddAuthorization(opt =>
 {
-    options.AddPolicy("AdminOnly", policy =>
-        policy.RequireClaim("IsAdmin", "true"));
+    opt.AddPolicy("AdminOnly", p => p.RequireClaim("IsAdmin", "true"));
 });
 
-
-var allowed = new[] {
-    "https://localhost:7090", // when you run UI from VS (HTTPS)
-    "http://localhost:5145"   // when you run UI via `dotnet run` (HTTP)
-}; 
-builder.Services.AddCors(o => o.AddPolicy("Dev",
-    p => p.WithOrigins(allowed).AllowAnyHeader().AllowAnyMethod()));
-
-// CORS for Blazor WASM (development)
-builder.Services.AddCors(options =>
+// CORS: allow UI origins
+var allowedOrigins = new[]
 {
-    options.AddPolicy("WasmDev", policy =>
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod());
+    "https://localhost:7090", // UI via Visual Studio (HTTPS)
+    "http://localhost:5145"   // UI via `dotnet run` (HTTP)
+};
+
+builder.Services.AddCors(opt =>
+{
+    opt.AddPolicy("Dev", p => p
+        .WithOrigins(allowedOrigins)
+        .AllowAnyHeader()
+        .AllowAnyMethod());
 });
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
-
-app.UseCors("WasmDev");
-
+app.UseCors("Dev");
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
