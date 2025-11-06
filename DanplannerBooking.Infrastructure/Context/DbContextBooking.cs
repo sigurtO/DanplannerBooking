@@ -31,69 +31,99 @@ namespace DanplannerBooking.Infrastructure.Context
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            
-            // NEW: defaults for layout coords so existing rows get 0,0
+
+            // --- Layout defaults (you already had these) ---
             modelBuilder.Entity<Space>().Property(x => x.X).HasDefaultValue(0);
             modelBuilder.Entity<Space>().Property(x => x.Y).HasDefaultValue(0);
             modelBuilder.Entity<Cottage>().Property(x => x.X).HasDefaultValue(0);
             modelBuilder.Entity<Cottage>().Property(x => x.Y).HasDefaultValue(0);
 
-            // Campsite -> Spaces (One-to-Many)
+            // --- Campsite required columns (DB says NOT NULL) ---
+            modelBuilder.Entity<Campsite>()
+                .Property(c => c.Description).HasDefaultValue("");
+            modelBuilder.Entity<Campsite>()
+                .Property(c => c.Location).HasDefaultValue("N/A");
+
+            // --- Space required columns (DB says NOT NULL) ---
+            modelBuilder.Entity<Space>()
+                .Property(s => s.ImageUrl).HasDefaultValue("");
+            modelBuilder.Entity<Space>()
+                .Property(s => s.PricePerNight).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+
+            // --- Cottage required columns (DB says NOT NULL) ---
+            modelBuilder.Entity<Cottage>()
+                .Property(c => c.Description).HasDefaultValue("");
+            modelBuilder.Entity<Cottage>()
+                .Property(c => c.ImageUrl).HasDefaultValue("");
+            modelBuilder.Entity<Cottage>()
+                .Property(c => c.Location).HasDefaultValue("N/A");
+            modelBuilder.Entity<Cottage>()
+                .Property(c => c.PricePerNight).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+
+            // --- Other decimals that had warnings earlier ---
+            modelBuilder.Entity<AddOn>()
+                .Property(a => a.Price).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+
+            modelBuilder.Entity<Booking>()
+                .Property(b => b.Discount).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+            modelBuilder.Entity<Booking>()
+                .Property(b => b.TotalPrice).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+
+            modelBuilder.Entity<Bundle>()
+                .Property(b => b.BasePrice).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+            modelBuilder.Entity<Bundle>()
+                .Property(b => b.Discount).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+
+            // ---- keep your existing relationships below ----
             modelBuilder.Entity<Campsite>()
                 .HasMany(c => c.Spaces)
                 .WithOne(s => s.Campsite)
                 .HasForeignKey(s => s.CampsiteId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Campsite -> Cottages (One-to-Many)
             modelBuilder.Entity<Campsite>()
                 .HasMany(c => c.Cottages)
-                .WithOne() // Cottage doesn't have navigation back to Campsite
+                .WithOne()
                 .HasForeignKey(c => c.CampsiteId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // User -> Bookings (One-to-Many)
             modelBuilder.Entity<User>()
-                .HasMany<Booking>() // User can have many bookings
+                .HasMany<Booking>()
                 .WithOne(b => b.User)
                 .HasForeignKey(b => b.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Booking -> BookingAddOn (One-to-Many)
             modelBuilder.Entity<Booking>()
                 .HasMany(b => b.BookingAddOns)
                 .WithOne(ba => ba.Booking)
                 .HasForeignKey(ba => ba.BookingId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // AddOn -> BookingAddOn (One-to-Many)
             modelBuilder.Entity<AddOn>()
                 .HasMany(a => a.BookingAddOns)
                 .WithOne(ba => ba.AddOn)
                 .HasForeignKey(ba => ba.AddOnId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Bundle -> BundleAddOn (One-to-Many)
             modelBuilder.Entity<Bundle>()
                 .HasMany(b => b.BundleAddOns)
                 .WithOne(ba => ba.Bundle)
                 .HasForeignKey(ba => ba.BundleId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // AddOn -> BundleAddOn (One-to-Many)
             modelBuilder.Entity<AddOn>()
                 .HasMany(a => a.BundleAddOns)
                 .WithOne(ba => ba.AddOn)
                 .HasForeignKey(ba => ba.AddOnId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Configure composite keys for join tables 
             modelBuilder.Entity<BookingAddOn>()
                 .HasKey(ba => new { ba.BookingId, ba.AddOnId });
 
             modelBuilder.Entity<BundleAddOn>()
                 .HasKey(ba => new { ba.BundleId, ba.AddOnId });
         }
+
 
 
 
