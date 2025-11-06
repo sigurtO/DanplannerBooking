@@ -25,6 +25,13 @@ builder.Services.AddAuthorization(options =>  //Dont know if this works just a t
 });
 
 
+var allowed = new[] {
+    "https://localhost:7090", // when you run UI from VS (HTTPS)
+    "http://localhost:5145"   // when you run UI via `dotnet run` (HTTP)
+}; 
+builder.Services.AddCors(o => o.AddPolicy("Dev",
+    p => p.WithOrigins(allowed).AllowAnyHeader().AllowAnyMethod()));
+
 // CORS for Blazor WASM (development)
 builder.Services.AddCors(options =>
 {
