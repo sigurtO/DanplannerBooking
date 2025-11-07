@@ -2,18 +2,18 @@
 @using System.Text.Json
 @using System.Net.Http.Json
 @using DanplannerBooking.Application.Dtos
+@using Microsoft.AspNetCore.Components.Forms
 @inject IJSRuntime JS
 @inject HttpClient Http
-
 
 <h2>🛠️ Kort-editor</h2>
 <p class="text-muted">Træk markører for at flytte dem. Pan/zoom på baggrunden.</p>
 
 <div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap">
-    <div class="card" style="min-width:280px; max-width:340px">
+    <div class="card" style="min-width:280px; max-width:360px; padding:12px;">
         <h3>Værktøjer</h3>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
             <button class="btn btn-primary" @onclick="AddTent">+ Teltplads</button>
             <button class="btn btn-primary" @onclick="AddCabin">+ Hytte</button>
         </div>
@@ -23,27 +23,48 @@
             <hr />
             <h4>Valgt</h4>
             <label>Navn</label>
-            <input @bind="Selected.Name" />
-            <label>Type</label>
-            <select @bind="Selected.ProductType">
+            <input class="form-control" @bind="Selected.Name" />
+            <label class="mt-2">Type</label>
+            <select class="form-select" @bind="Selected.ProductType">
                 <option value="Plads">Plads</option>
                 <option value="Hytte">Hytte</option>
             </select>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                <div><label>X</label><input type="number" @bind="Selected.X" /></div>
-                <div><label>Y</label><input type="number" @bind="Selected.Y" /></div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;" class="mt-2">
+                <div><label>X</label><input class="form-control" type="number" @bind="Selected.X" /></div>
+                <div><label>Y</label><input class="form-control" type="number" @bind="Selected.Y" /></div>
             </div>
-            <button class="btn" @onclick="ApplyManualPosition">↻ Opdater</button>
-            <button class="btn" @onclick="DeleteSelected">🗑️ Slet</button>
+            <div class="mt-2" style="display:flex; gap:8px;">
+                <button class="btn btn-outline-secondary" @onclick="ApplyManualPosition">↻ Opdater</button>
+                <button class="btn btn-outline-danger" @onclick="DeleteSelected">🗑️ Slet</button>
+            </div>
         }
 
         <hr />
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-            <button class="btn btn-primary" @onclick="ExportJson">⬇️ Export</button>
-            <label class="btn">
-                ⬆️ Import <InputFile OnChange="ImportJson" accept=".json,.txt,application/json" class="ms-2" />
+            <button class="btn btn-outline-primary" @onclick="ExportJson">⬇️ Export</button>
+
+            <label class="btn btn-outline-secondary" style="margin:0;">
+                ⬆️ Import
+                <InputFile OnChange="ImportJson" accept=".json,.txt,application/json" class="ms-2" />
             </label>
+
+            <button class="btn btn-outline-warning" @onclick="CreateNewInDb"
+                    disabled="@(!Units.Any(u => !u.FromDb))">
+                Opret nye i DB
+            </button>
+
+            <button class="btn btn-success" @onclick="SaveLayout"
+                    disabled="@(!Units.Any(u => u.FromDb))">
+                Gem layout
+            </button>
         </div>
+
+        @if (!string.IsNullOrEmpty(StatusMessage))
+        {
+            <div class="alert mt-2 py-2" style="border-radius:8px; font-size:.95rem; @(StatusKind switch { "success" => "background:#e6ffed;border:1px solid #b7f5c6;color:#055b27;", "danger" => "background:#ffecec;border:1px solid #f5b7b7;color:#7a1111;", "warning" => "background:#fff8e6;border:1px solid #f5e0b7;color:#7a5b05;", _ => "background:#eef4ff;border:1px solid #c8d9ff;color:#0b3d91;" })">
+                @StatusMessage
+            </div>
+        }
     </div>
 
     <div id="mapContainer" style="flex:1 1 820px; min-width:760px; height:75vh; border:1px solid #ccc; border-radius:10px; overflow:hidden;">
@@ -66,14 +87,21 @@
                     {
                         <circle r="12" style="fill:rgba(0,200,0,.6); @border"></circle>
                     }
-                    <text y="-20" text-anchor="middle" fill="white" font-size="12">@u.Name</text>
-                </g>
-            }
+                    <text y="-20" text-anchor="middle" fill="white" font-size="12">
+                        @u.Name @if(!u.FromDb){
+                        <tspan fill="#ffd54f"> (ny)</tspan>
+                    }
+                </text>
+            </g>
+                        }
         </svg>
     </div>
 </div>
 
 @code {
+    private string? StatusMessage;
+    private string StatusKind = "info"; // "success" | "danger" | "warning" | "info"
+
     public record EditableUnit
     {
         public string Id { get; init; } = Guid.NewGuid().ToString();
@@ -81,15 +109,10 @@
         public string ProductType { get; set; } = "Plads"; // "Plads" | "Hytte"
         public int X { get; set; }
         public int Y { get; set; }
+        public bool FromDb { get; set; } = false; // ← NYT: om enheden findes i DB
     }
 
-    private List<EditableUnit> Units = new()
-  {
-    new() { Name = "P-101", ProductType = "Plads", X = 300, Y = 610 },
-    new() { Name = "P-102", ProductType = "Plads", X = 380, Y = 600 },
-    new() { Name = "H-201", ProductType = "Hytte", X = 880, Y = 650 },
-  };
-
+    private List<EditableUnit> Units = new(); // vi loader fra API
     private string? _selectedId;
     private EditableUnit? Selected => Units.FirstOrDefault(z => z.Id == _selectedId);
 
@@ -99,6 +122,7 @@
         {
             await JS.InvokeVoidAsync("CampsiteMap.initPanZoom", "#mapContainer", "#campsiteSvg");
             await JS.InvokeVoidAsync("CampsiteMap.enableDrag", "#campsiteSvg", "g.unit", DotNetObjectReference.Create(this));
+            await LoadFromApi();
         }
     }
 
@@ -113,13 +137,13 @@
     private void AddTent()
     {
         var idx = Units.Count(u => u.ProductType == "Plads") + 101;
-        Units.Add(new EditableUnit { Name = $"P-{idx}", ProductType = "Plads", X = 200, Y = 200 });
+        Units.Add(new EditableUnit { Name = $"P-{idx}", ProductType = "Plads", X = 200, Y = 200, FromDb = false });
     }
 
     private void AddCabin()
     {
         var idx = Units.Count(u => u.ProductType == "Hytte") + 201;
-        Units.Add(new EditableUnit { Name = $"H-{idx}", ProductType = "Hytte", X = 230, Y = 230 });
+        Units.Add(new EditableUnit { Name = $"H-{idx}", ProductType = "Hytte", X = 230, Y = 230, FromDb = false });
     }
 
     private void DeleteSelected()
@@ -137,35 +161,42 @@
         await JS.InvokeVoidAsync("CampsiteMap.downloadText", "campsite-layout.json", json);
     }
 
+    // IMPORT: fil -> importer -> reload fra API
     private async Task ImportJson(InputFileChangeEventArgs e)
     {
-        var file = e.File;                    // <— use e.File (or e.GetMultipleFiles())
+        var file = e.File;
         if (file is null) return;
 
         using var stream = file.OpenReadStream(maxAllowedSize: 1_048_576);
         using var reader = new StreamReader(stream);
         var text = await reader.ReadToEndAsync();
 
-        // Wrap if user uploaded a bare array
         var payload = text.TrimStart().StartsWith("{")
             ? text
             : $"{{\"createMissing\":true,\"units\":{text}}}";
 
         var content = new StringContent(payload, System.Text.Encoding.UTF8, "application/json");
-
-        // post to API
         var resp = await Http.PostAsync("api/units/layout/import", content);
-        resp.EnsureSuccessStatusCode();
 
-        await LoadFromApi();                  // refresh markers from DB
+        if (resp.IsSuccessStatusCode)
+        {
+            StatusKind = "success";
+            StatusMessage = "Layout importeret. Henter fra API…";
+            await LoadFromApi();
+        }
+        else
+        {
+            StatusKind = "danger";
+            StatusMessage = "Import fejlede: " + await resp.Content.ReadAsStringAsync();
+        }
+        StateHasChanged();
     }
 
-
+    // HENT: læs alle enheder fra API
     private async Task LoadFromApi()
     {
         try
         {
-            // API returns a list of UnitDto { Id, Name, Type, X, Y }
             var data = await Http.GetFromJsonAsync<List<UnitDto>>("api/units") ?? new();
 
             Units = data.Select(d => new EditableUnit
@@ -174,15 +205,109 @@
                 Name = d.Name,
                 ProductType = d.Type == "Cottage" ? "Hytte" : "Plads",
                 X = d.X,
-                Y = d.Y
+                Y = d.Y,
+                FromDb = true // ← marker disse som DB-eksisterende
             }).ToList();
 
-            StateHasChanged();
+            StatusKind = "info";
+            StatusMessage = $"Indlæst {Units.Count} enheder fra API.";
         }
-        catch
+        catch (Exception ex)
         {
-            // optional: show a toast/snackbar
+            StatusKind = "danger";
+            StatusMessage = "Kunne ikke hente fra API: " + ex.Message;
         }
+        StateHasChanged();
     }
 
+    // OPRET NYE: send nye (FromDb=false) til importer
+    private async Task CreateNewInDb()
+    {
+        var newOnes = Units.Where(u => !u.FromDb).ToList();
+        if (newOnes.Count == 0)
+        {
+            StatusKind = "warning";
+            StatusMessage = "Ingen nye enheder at oprette.";
+            StateHasChanged();
+            return;
+        }
+
+        var body = new
+        {
+            createMissing = true,
+            units = newOnes.Select(u => new
+            {
+                id = (Guid?)null,
+                name = u.Name,
+                type = u.ProductType == "Hytte" ? "Cottage" : "Space",
+                x = u.X,
+                y = u.Y
+            }).ToList()
+        };
+
+        try
+        {
+            var resp = await Http.PostAsJsonAsync("api/units/layout/import", body);
+            if (resp.IsSuccessStatusCode)
+            {
+                StatusKind = "success";
+                StatusMessage = $"Oprettede {newOnes.Count} nye enheder i DB. Henter fra API…";
+                await LoadFromApi();
+            }
+            else
+            {
+                StatusKind = "danger";
+                StatusMessage = "Opret fejlede: " + await resp.Content.ReadAsStringAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusKind = "danger";
+            StatusMessage = "Opret fejlede: " + ex.Message;
+        }
+        StateHasChanged();
+    }
+
+    // GEM: send X/Y for eksisterende DB-enheder, reload bagefter
+    private async Task SaveLayout()
+    {
+        try
+        {
+            var toSave = Units.Where(u => u.FromDb).ToList();
+            if (toSave.Count == 0)
+            {
+                StatusKind = "warning";
+                StatusMessage = "Ingen eksisterende DB-enheder at gemme. Brug 'Opret nye i DB' først.";
+                StateHasChanged();
+                return;
+            }
+
+            var payload = toSave.Select(u => new
+            {
+                id = Guid.TryParse(u.Id, out var gid) ? gid : Guid.Empty,
+                type = u.ProductType == "Hytte" ? "Cottage" : "Space",
+                x = u.X,
+                y = u.Y
+            }).Where(x => x.id != Guid.Empty).ToList();
+
+            var resp = await Http.PutAsJsonAsync("api/units/layout", payload);
+            if (resp.IsSuccessStatusCode)
+            {
+                StatusKind = "success";
+                StatusMessage = $"Layout gemt ({payload.Count} enheder). Henter fra API…";
+                await LoadFromApi();
+            }
+            else
+            {
+                StatusKind = "danger";
+                StatusMessage = "Gem fejlede: " + await resp.Content.ReadAsStringAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusKind = "danger";
+            StatusMessage = "Gem fejlede: " + ex.Message;
+        }
+        StateHasChanged();
+    }
 }
