@@ -13,45 +13,150 @@ public class UnitsController : ControllerBase
     private readonly DbContextBooking _db;
     public UnitsController(DbContextBooking db) => _db = db;
 
-    // GET api/units  -> both Spaces + Cottages
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<UnitDto>>> GetUnits(CancellationToken ct)
+    public sealed class UnitOptionDto
     {
-        var spaces = await _db.Spaces.AsNoTracking()
-            .Select(s => new UnitDto
-            {
-                Id = s.Id,
-                Name = s.Name,
-                Type = "Space",
-                X = s.X,
-                Y = s.Y
-            }).ToListAsync(ct);
+        public Guid Id { get; set; }
+        public string Name { get; set; } = "";
+        public string Type { get; set; } = "";     // Space | Cottage
+        public bool HasPosition { get; set; }
+        public Guid CampsiteId { get; set; }
+    }
 
-        var cottages = await _db.Cottages.AsNoTracking()
-            .Select(c => new UnitDto
-            {
-                Id = c.Id,
-                Name = c.Name,
-                Type = "Cottage",
-                X = c.X,
-                Y = c.Y
-            }).ToListAsync(ct);
+    public sealed class SetPositionDto
+    {
+        public int X { get; set; }
+        public int Y { get; set; }
+    }
+
+    // GET api/units?campsiteId=...
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<UnitDto>>> GetUnits(
+        [FromQuery] Guid? campsiteId,
+        CancellationToken ct)
+    {
+        var spacesQ = _db.Spaces.AsNoTracking();
+        var cottagesQ = _db.Cottages.AsNoTracking();
+
+        if (campsiteId is Guid cid && cid != Guid.Empty)
+        {
+            spacesQ = spacesQ.Where(s => s.CampsiteId == cid);
+            cottagesQ = cottagesQ.Where(c => c.CampsiteId == cid);
+        }
+
+        var spaces = await spacesQ.Select(s => new UnitDto
+        {
+            Id = s.Id,
+            Name = s.Name,
+            Type = "Space",
+            X = s.X,
+            Y = s.Y
+        }).ToListAsync(ct);
+
+        var cottages = await cottagesQ.Select(c => new UnitDto
+        {
+            Id = c.Id,
+            Name = c.Name,
+            Type = "Cottage",
+            X = c.X,
+            Y = c.Y
+        }).ToListAsync(ct);
 
         var all = spaces.Concat(cottages).OrderBy(x => x.Name).ToList();
         return Ok(all);
     }
 
-    // PUT api/units/layout  -> bulk update X/Y
-    [HttpPut("layout")]
-    public async Task<ActionResult> SaveLayout([FromBody] List<UnitLayoutDto> layout, CancellationToken ct)
+    // GET api/units/options?campsiteId=...&unplacedOnly=true
+    [HttpGet("options")]
+    public async Task<ActionResult<IEnumerable<UnitOptionDto>>> GetOptions(
+        [FromQuery] Guid? campsiteId,
+        [FromQuery] bool unplacedOnly,
+        CancellationToken ct)
     {
-        if (layout is null || layout.Count == 0) return BadRequest("Empty layout");
+        var spacesQ = _db.Spaces.AsNoTracking();
+        var cottagesQ = _db.Cottages.AsNoTracking();
+
+        if (campsiteId is Guid cid && cid != Guid.Empty)
+        {
+            spacesQ = spacesQ.Where(s => s.CampsiteId == cid);
+            cottagesQ = cottagesQ.Where(c => c.CampsiteId == cid);
+        }
+
+        var spaces = await spacesQ.Select(s => new UnitOptionDto
+        {
+            Id = s.Id,
+            Name = s.Name,
+            Type = "Space",
+            HasPosition = !(s.X == 0 && s.Y == 0),
+            CampsiteId = s.CampsiteId
+        }).ToListAsync(ct);
+
+        var cottages = await cottagesQ.Select(c => new UnitOptionDto
+        {
+            Id = c.Id,
+            Name = c.Name,
+            Type = "Cottage",
+            HasPosition = !(c.X == 0 && c.Y == 0),
+            CampsiteId = c.CampsiteId
+        }).ToListAsync(ct);
+
+        var all = spaces.Concat(cottages);
+        if (unplacedOnly) all = all.Where(o => !o.HasPosition);
+
+        return Ok(all.OrderBy(o => o.Name).ToList());
+    }
+
+    // PUT api/units/{id}/position
+    [HttpPut("{id:guid}/position")]
+    public async Task<ActionResult> SetPosition(
+        [FromRoute] Guid id,
+        [FromBody] SetPositionDto body,
+        CancellationToken ct)
+    {
+        var space = await _db.Spaces.FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (space is not null)
+        {
+            space.X = body.X;
+            space.Y = body.Y;
+            await _db.SaveChangesAsync(ct);
+            return NoContent();
+        }
+
+        var cottage = await _db.Cottages.FirstOrDefaultAsync(c => c.Id == id, ct);
+        if (cottage is not null)
+        {
+            cottage.X = body.X;
+            cottage.Y = body.Y;
+            await _db.SaveChangesAsync(ct);
+            return NoContent();
+        }
+
+        return NotFound();
+    }
+
+    // PUT api/units/layout?campsiteId=...
+    [HttpPut("layout")]
+    public async Task<ActionResult> SaveLayout(
+        [FromQuery] Guid? campsiteId,
+        [FromBody] List<UnitLayoutDto> layout,
+        CancellationToken ct)
+    {
+        if (layout is null || layout.Count == 0)
+            return BadRequest("Empty layout");
 
         var spaceIds = layout.Where(l => l.Type == "Space").Select(l => l.Id).ToHashSet();
         var cottageIds = layout.Where(l => l.Type == "Cottage").Select(l => l.Id).ToHashSet();
 
-        var dbSpaces = await _db.Spaces.Where(s => spaceIds.Contains(s.Id)).ToListAsync(ct);
-        var dbCottages = await _db.Cottages.Where(c => cottageIds.Contains(c.Id)).ToListAsync(ct);
+        var spacesQ = _db.Spaces.Where(s => spaceIds.Contains(s.Id));
+        var cottagesQ = _db.Cottages.Where(c => cottageIds.Contains(c.Id));
+
+        if (campsiteId is Guid cid && cid != Guid.Empty)
+        {
+            spacesQ = spacesQ.Where(s => s.CampsiteId == cid);
+            cottagesQ = cottagesQ.Where(c => c.CampsiteId == cid);
+        }
+
+        var dbSpaces = await spacesQ.ToListAsync(ct);
+        var dbCottages = await cottagesQ.ToListAsync(ct);
 
         foreach (var item in layout)
         {
@@ -59,13 +164,15 @@ public class UnitsController : ControllerBase
             {
                 var s = dbSpaces.FirstOrDefault(x => x.Id == item.Id);
                 if (s is null) continue;
-                s.X = item.X; s.Y = item.Y;
+                s.X = item.X;
+                s.Y = item.Y;
             }
             else if (item.Type == "Cottage")
             {
                 var c = dbCottages.FirstOrDefault(x => x.Id == item.Id);
                 if (c is null) continue;
-                c.X = item.X; c.Y = item.Y;
+                c.X = item.X;
+                c.Y = item.Y;
             }
         }
 
@@ -73,9 +180,11 @@ public class UnitsController : ControllerBase
         return NoContent();
     }
 
-    // POST api/units/layout/import -> create/update by name/id and set CampsiteId
+    // POST api/units/layout/import
     [HttpPost("layout/import")]
-    public async Task<ActionResult> ImportLayout([FromBody] ImportMapRequest body, CancellationToken ct)
+    public async Task<ActionResult> ImportLayout(
+        [FromBody] ImportMapRequest body,
+        CancellationToken ct)
     {
         try
         {
@@ -92,7 +201,6 @@ public class UnitsController : ControllerBase
                     Name = "Standard Campingplads",
                     Description = "Auto-created by layout import",
                     Location = "N/A"
-
                 };
                 await _db.Campsites.AddAsync(campsite, ct);
                 await _db.SaveChangesAsync(ct);
@@ -103,7 +211,6 @@ public class UnitsController : ControllerBase
             var spaces = await _db.Spaces.ToListAsync(ct);
             var cottages = await _db.Cottages.ToListAsync(ct);
 
-            // Lookups
             static string Key(string? s) => (s ?? string.Empty).Trim().ToLowerInvariant();
             var spaceById = spaces.ToDictionary(s => s.Id);
             var cottageById = cottages.ToDictionary(c => c.Id);
@@ -138,17 +245,16 @@ public class UnitsController : ControllerBase
                             CampsiteId = campsiteId,
                             X = u.X,
                             Y = u.Y,
-
-                            // ✅ These fix the DB NOT NULL errors:
-                            ImageUrl = "",         // your DB requires non-null
-                            PricePerNight = 0m     // (only if non-nullable in model)
+                            ImageUrl = "",
+                            PricePerNight = 0m
                         };
                         _db.Spaces.Add(entity);
                         created++;
                     }
                     else
                     {
-                        entity.X = u.X; entity.Y = u.Y;
+                        entity.X = u.X;
+                        entity.Y = u.Y;
                         updated++;
                     }
                 }
@@ -171,19 +277,16 @@ public class UnitsController : ControllerBase
                             CampsiteId = campsiteId,
                             X = u.X,
                             Y = u.Y,
-
-                            // ✅ satisfy NOT NULL columns in your DB schema:
                             Description = "N/A",
-                            ImageUrl = "",     // <-- add this line
-                                               // If non-nullable in your model:
-                                               // PricePerNight = 0m
+                            ImageUrl = ""
                         };
                         _db.Cottages.Add(entity);
                         created++;
                     }
                     else
                     {
-                        entity.X = u.X; entity.Y = u.Y;
+                        entity.X = u.X;
+                        entity.Y = u.Y;
                         updated++;
                     }
                 }

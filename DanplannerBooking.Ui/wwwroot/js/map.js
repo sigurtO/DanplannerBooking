@@ -102,6 +102,25 @@ window.CampsiteMap = (function () {
         console.log("enableDrag(delegated): ready");
     }
 
+    // --- NY: one-shot pick på kortet (returnerer X,Y i SVG-koordinater) ---
+    function pickPoint(svgSelector, dotnetRef, callbackMethodName) {
+        const svg = document.querySelector(svgSelector);
+        if (!svg) return;
+
+        function clientToSvgPoint(evt) {
+            const pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
+            const ctm = svg.getScreenCTM(); if (!ctm) return { x: 0, y: 0 };
+            const p = pt.matrixTransform(ctm.inverse()); return { x: p.x, y: p.y };
+        }
+
+        function handler(evt) {
+            const p = clientToSvgPoint(evt);
+            svg.removeEventListener('click', handler, true);
+            dotnetRef?.invokeMethodAsync?.(callbackMethodName, Math.round(p.x), Math.round(p.y));
+        }
+        svg.addEventListener('click', handler, true);
+    }
+
     function downloadText(filename, text) {
         const blob = new Blob([text], { type: "application/json" });
         const url = URL.createObjectURL(blob);
@@ -109,6 +128,6 @@ window.CampsiteMap = (function () {
         setTimeout(() => URL.revokeObjectURL(url), 800);
     }
 
-    console.log("CampsiteMap loaded (viewBox + delegated drag)");
-    return { initPanZoom, enableDrag, downloadText };
+    console.log("CampsiteMap loaded (viewBox + delegated drag + pickPoint)");
+    return { initPanZoom, enableDrag, pickPoint, downloadText };
 })();

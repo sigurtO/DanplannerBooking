@@ -6,16 +6,57 @@
 @inject IJSRuntime JS
 @inject HttpClient Http
 
-<h2>🛠️ Kort-editor</h2>
-<p class="text-muted">Træk markører for at flytte dem. Pan/zoom på baggrunden.</p>
+<h2>🗺️ Kort-editor</h2>
+
+<div class="mb-3" style="display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+    <div style="min-width:320px; max-width:420px">
+        <label class="form-label">Vælg campingplads</label>
+        <select class="form-select"
+                @bind="SelectedCampsiteId"
+                @bind:after="OnCampsiteChanged">
+            @if (Campsites.Count == 0)
+            {
+                <option value="">(indlæser…)</option>
+            }
+            else
+            {
+                <option value="">— vælg —</option>
+                @foreach (var c in Campsites)
+                {
+                    <option value="@c.Id">@c.Name</option>
+                }
+            }
+        </select>
+
+        @if (SelectedCampsite is not null)
+        {
+            <div class="card mt-2 p-2" style="max-width:420px">
+                <div style="display:flex; gap:12px;">
+                    <img src="@BgImageUrl" alt="plads" style="width:140px;height:90px;object-fit:cover;border-radius:6px;border:1px solid #ddd;" />
+                    <div>
+                        <div class="fw-bold">@SelectedCampsite.Name</div>
+                        <div class="text-muted" style="font-size:.9rem;">
+                            Hytter: @Units.Count(u => u.ProductType=="Hytte") • Pladser: @Units.Count(u => u.ProductType=="Plads")
+                        </div>
+                        <div class="text-muted" style="font-size:.85rem;">Billedsti: <code>@BgImageUrl</code></div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="alert alert-info mt-4" style="flex:1;min-width:280px;">
+        Træk markører for at flytte dem. Brug “Placer markør på kort” for at give DB-enheder en placering.
+    </div>
+</div>
 
 <div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap">
     <div class="card" style="min-width:280px; max-width:360px; padding:12px;">
         <h3>Værktøjer</h3>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
-            <button class="btn btn-primary" @onclick="AddTent">+ Teltplads</button>
-            <button class="btn btn-primary" @onclick="AddCabin">+ Hytte</button>
+            <button class="btn btn-primary" @onclick="AddTent"  disabled="@DisabledNoCampsite">+ Teltplads</button>
+            <button class="btn btn-primary" @onclick="AddCabin" disabled="@DisabledNoCampsite">+ Hytte</button>
         </div>
 
         @if (Selected is not null)
@@ -41,21 +82,28 @@
 
         <hr />
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-            <button class="btn btn-outline-primary" @onclick="ExportJson">⬇️ Export</button>
-
+            <button class="btn btn-outline-primary" @onclick="ExportJson" disabled="@DisabledNoCampsite">⬇️ Export</button>
             <label class="btn btn-outline-secondary" style="margin:0;">
                 ⬆️ Import
                 <InputFile OnChange="ImportJson" accept=".json,.txt,application/json" class="ms-2" />
             </label>
+            <button class="btn btn-outline-warning" @onclick="CreateNewInDb" disabled="@DisabledNoNew">Opret nye i DB</button>
+            <button class="btn btn-success" @onclick="SaveLayout" disabled="@DisabledNoDb">Gem layout</button>
+        </div>
 
-            <button class="btn btn-outline-warning" @onclick="CreateNewInDb"
-                    disabled="@(!Units.Any(u => !u.FromDb))">
-                Opret nye i DB
-            </button>
-
-            <button class="btn btn-success" @onclick="SaveLayout"
-                    disabled="@(!Units.Any(u => u.FromDb))">
-                Gem layout
+        <hr />
+        <h5>Placer DB-enhed</h5>
+        <select class="form-select" @bind="SelectedOptionId">
+            <option value="">— vælg enhed (uden placering) —</option>
+            @foreach (var o in Options)
+            {
+                <option value="@o.Id">@o.Name (@(o.Type=="Cottage"?"Hytte":"Plads"))</option>
+            }
+        </select>
+        <div class="mt-2" style="display:flex; gap:8px;">
+            <button class="btn btn-outline-secondary" @onclick="LoadOptions">Opdater liste</button>
+            <button class="btn btn-primary" @onclick="StartPlaceOnMap" disabled="@string.IsNullOrEmpty(SelectedOptionId)">
+                Placer markør på kort
             </button>
         </div>
 
@@ -69,7 +117,7 @@
 
     <div id="mapContainer" style="flex:1 1 820px; min-width:760px; height:75vh; border:1px solid #ccc; border-radius:10px; overflow:hidden;">
         <svg id="campsiteSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1336 768" style="width:100%; height:100%;">
-            <image href="images/campsite.jpg" x="0" y="0" width="1336" height="768" />
+            <image href="@BgImageUrl" x="0" y="0" width="1336" height="768" />
             @foreach (var u in Units)
             {
                 var isSel = _selectedId == u.Id;
@@ -88,20 +136,36 @@
                         <circle r="12" style="fill:rgba(0,200,0,.6); @border"></circle>
                     }
                     <text y="-20" text-anchor="middle" fill="white" font-size="12">
-                        @u.Name @if(!u.FromDb){
-                        <tspan fill="#ffd54f"> (ny)</tspan>
-                    }
-                </text>
-            </g>
-                        }
+                        @u.Name @if(!u.FromDb){ <tspan fill="#ffd54f"> (ny)</tspan> }
+                    </text>
+                </g>
+            }
         </svg>
     </div>
 </div>
 
 @code {
-    private string? StatusMessage;
-    private string StatusKind = "info"; // "success" | "danger" | "warning" | "info"
+    // ---------- Campsites ----------
+    private sealed class UiCampsite
+    {
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string ImageUrl { get; set; } = "";
+    }
+    private List<UiCampsite> Campsites = new();
+    private string? SelectedCampsiteId;
+    private UiCampsite? SelectedCampsite => Campsites.FirstOrDefault(c => c.Id == SelectedCampsiteId);
+    private string BgImageUrl => string.IsNullOrWhiteSpace(SelectedCampsite?.ImageUrl) ? "images/campsite.jpg" : SelectedCampsite!.ImageUrl;
 
+    private bool DisabledNoCampsite => string.IsNullOrEmpty(SelectedCampsiteId);
+    private bool DisabledNoNew => DisabledNoCampsite || !Units.Any(u => !u.FromDb);
+    private bool DisabledNoDb  => DisabledNoCampsite || !Units.Any(u => u.FromDb);
+
+    // ---------- Status ----------
+    private string? StatusMessage;
+    private string StatusKind = "info";
+
+    // ---------- Units ----------
     public record EditableUnit
     {
         public string Id { get; init; } = Guid.NewGuid().ToString();
@@ -109,12 +173,23 @@
         public string ProductType { get; set; } = "Plads"; // "Plads" | "Hytte"
         public int X { get; set; }
         public int Y { get; set; }
-        public bool FromDb { get; set; } = false; // ← NYT: om enheden findes i DB
+        public bool FromDb { get; set; } = false;
     }
-
-    private List<EditableUnit> Units = new(); // vi loader fra API
+    private List<EditableUnit> Units = new();
     private string? _selectedId;
     private EditableUnit? Selected => Units.FirstOrDefault(z => z.Id == _selectedId);
+
+    // ---------- Options (ubelagte DB-enheder) ----------
+    private sealed class UnitOption
+    {
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Type { get; set; } = "";   // "Space" | "Cottage"
+        public bool HasPosition { get; set; }
+        public string CampsiteId { get; set; } = "";
+    }
+    private List<UnitOption> Options = new();
+    private string? SelectedOptionId;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -122,8 +197,35 @@
         {
             await JS.InvokeVoidAsync("CampsiteMap.initPanZoom", "#mapContainer", "#campsiteSvg");
             await JS.InvokeVoidAsync("CampsiteMap.enableDrag", "#campsiteSvg", "g.unit", DotNetObjectReference.Create(this));
-            await LoadFromApi();
+            await LoadCampsites();
         }
+    }
+
+    private async Task LoadCampsites()
+    {
+        Campsites = (await Http.GetFromJsonAsync<List<UiCampsite>>("api/campsites"))?.Select(c => new UiCampsite
+        {
+            Id = c.Id, Name = c.Name, ImageUrl = string.IsNullOrWhiteSpace(c.ImageUrl) ? "" : c.ImageUrl
+        }).OrderBy(c=>c.Name).ToList() ?? new();
+
+        // auto-vælg første hvis ønsket
+        if (string.IsNullOrEmpty(SelectedCampsiteId) && Campsites.Count > 0)
+            SelectedCampsiteId = Campsites[0].Id;
+
+        await RefreshForCampsite();
+        StateHasChanged();
+    }
+
+    private async Task OnCampsiteChanged()
+    {
+        await RefreshForCampsite();
+    }
+
+    private async Task RefreshForCampsite()
+    {
+        if (string.IsNullOrEmpty(SelectedCampsiteId)) { Units.Clear(); Options.Clear(); StateHasChanged(); return; }
+        await LoadFromApi();
+        await LoadOptions();
     }
 
     [JSInvokable]
@@ -161,7 +263,6 @@
         await JS.InvokeVoidAsync("CampsiteMap.downloadText", "campsite-layout.json", json);
     }
 
-    // IMPORT: fil -> importer -> reload fra API
     private async Task ImportJson(InputFileChangeEventArgs e)
     {
         var file = e.File;
@@ -182,7 +283,7 @@
         {
             StatusKind = "success";
             StatusMessage = "Layout importeret. Henter fra API…";
-            await LoadFromApi();
+            await RefreshForCampsite();
         }
         else
         {
@@ -192,25 +293,23 @@
         StateHasChanged();
     }
 
-    // HENT: læs alle enheder fra API
     private async Task LoadFromApi()
     {
         try
         {
-            var data = await Http.GetFromJsonAsync<List<UnitDto>>("api/units") ?? new();
+            var url = $"api/units?campsiteId={SelectedCampsiteId}";
+            var data = await Http.GetFromJsonAsync<List<UnitDto>>(url) ?? new();
 
             Units = data.Select(d => new EditableUnit
             {
                 Id = d.Id.ToString(),
                 Name = d.Name,
                 ProductType = d.Type == "Cottage" ? "Hytte" : "Plads",
-                X = d.X,
-                Y = d.Y,
-                FromDb = true // ← marker disse som DB-eksisterende
+                X = d.X, Y = d.Y, FromDb = true
             }).ToList();
 
             StatusKind = "info";
-            StatusMessage = $"Indlæst {Units.Count} enheder fra API.";
+            StatusMessage = $"Indlæst {Units.Count} enheder for valgt plads.";
         }
         catch (Exception ex)
         {
@@ -220,7 +319,6 @@
         StateHasChanged();
     }
 
-    // OPRET NYE: send nye (FromDb=false) til importer
     private async Task CreateNewInDb()
     {
         var newOnes = Units.Where(u => !u.FromDb).ToList();
@@ -240,8 +338,7 @@
                 id = (Guid?)null,
                 name = u.Name,
                 type = u.ProductType == "Hytte" ? "Cottage" : "Space",
-                x = u.X,
-                y = u.Y
+                x = u.X, y = u.Y
             }).ToList()
         };
 
@@ -252,7 +349,7 @@
             {
                 StatusKind = "success";
                 StatusMessage = $"Oprettede {newOnes.Count} nye enheder i DB. Henter fra API…";
-                await LoadFromApi();
+                await RefreshForCampsite();
             }
             else
             {
@@ -268,7 +365,6 @@
         StateHasChanged();
     }
 
-    // GEM: send X/Y for eksisterende DB-enheder, reload bagefter
     private async Task SaveLayout()
     {
         try
@@ -277,7 +373,7 @@
             if (toSave.Count == 0)
             {
                 StatusKind = "warning";
-                StatusMessage = "Ingen eksisterende DB-enheder at gemme. Brug 'Opret nye i DB' først.";
+                StatusMessage = "Ingen eksisterende DB-enheder at gemme.";
                 StateHasChanged();
                 return;
             }
@@ -286,16 +382,15 @@
             {
                 id = Guid.TryParse(u.Id, out var gid) ? gid : Guid.Empty,
                 type = u.ProductType == "Hytte" ? "Cottage" : "Space",
-                x = u.X,
-                y = u.Y
+                x = u.X, y = u.Y
             }).Where(x => x.id != Guid.Empty).ToList();
 
             var resp = await Http.PutAsJsonAsync("api/units/layout", payload);
             if (resp.IsSuccessStatusCode)
             {
                 StatusKind = "success";
-                StatusMessage = $"Layout gemt ({payload.Count} enheder). Henter fra API…";
-                await LoadFromApi();
+                StatusMessage = $"Layout gemt ({payload.Count} enheder).";
+                await RefreshForCampsite();
             }
             else
             {
@@ -307,6 +402,55 @@
         {
             StatusKind = "danger";
             StatusMessage = "Gem fejlede: " + ex.Message;
+        }
+        StateHasChanged();
+    }
+
+    private async Task LoadOptions()
+    {
+        if (string.IsNullOrEmpty(SelectedCampsiteId)) { Options.Clear(); return; }
+        var url = $"api/units/options?campsiteId={SelectedCampsiteId}&unplacedOnly=true";
+        Options = await Http.GetFromJsonAsync<List<UnitOption>>(url) ?? new();
+        SelectedOptionId = Options.Count > 0 ? Options[0].Id : null;
+        StateHasChanged();
+    }
+
+    private async Task StartPlaceOnMap()
+    {
+        if (string.IsNullOrEmpty(SelectedOptionId)) return;
+        StatusKind = "info";
+        StatusMessage = "Klik på kortet for at vælge position…";
+        StateHasChanged();
+
+        await JS.InvokeVoidAsync("CampsiteMap.pickPoint", "#campsiteSvg",
+            DotNetObjectReference.Create(this), nameof(OnPickPoint));
+    }
+
+    [JSInvokable]
+    public async Task OnPickPoint(int x, int y)
+    {
+        try
+        {
+            if (Guid.TryParse(SelectedOptionId, out var id) && id != Guid.Empty)
+            {
+                var resp = await Http.PutAsJsonAsync($"api/units/{id}/position", new { x, y });
+                if (resp.IsSuccessStatusCode)
+                {
+                    StatusKind = "success";
+                    StatusMessage = $"Placeret ved ({x},{y}). Opdaterer…";
+                    await RefreshForCampsite();
+                }
+                else
+                {
+                    StatusKind = "danger";
+                    StatusMessage = "Placering fejlede: " + await resp.Content.ReadAsStringAsync();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusKind = "danger";
+            StatusMessage = "Fejl under placering: " + ex.Message;
         }
         StateHasChanged();
     }

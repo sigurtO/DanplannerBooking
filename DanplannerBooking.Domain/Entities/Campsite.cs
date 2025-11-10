@@ -13,6 +13,7 @@ namespace DanplannerBooking.Domain.Entities
         public string Name { get; set; }
         public string Location { get; set; }
         public string Description { get; set; }
+        public string ImageUrl { get; set; } = "";
 
         // Shared features
         public bool HasOceanAccess { get; set; }
