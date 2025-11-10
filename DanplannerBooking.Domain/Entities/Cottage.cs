@@ -4,6 +4,7 @@
     {
         public Guid Id { get; set; }
         public Guid CampsiteId { get; set; }
+        //public Campsite Campsite { get; set; } // Navigation property 
         public string Name { get; set; }
         public string Location { get; set; }
         public string Description { get; set; }
