@@ -12,6 +12,10 @@ namespace DanplannerBooking.Application.Dtos.Space
         public Guid CampsiteId { get; set; }
         public CampsiteResponseDto? Campsite { get; set; }
 
+        public string Name { get; set; } // new
+        public string Location { get; set; } // new
+        public string Description { get; set; } // new
+
         public bool HasElectricity { get; set; }
         public int MetersFromToilet { get; set; }
 
@@ -29,6 +33,9 @@ namespace DanplannerBooking.Application.Dtos.Space
         Guid Id,
         Guid CampsiteId,
         CampsiteResponseDto Campsite,
+        string Name,
+        string Location,
+        string Description,
         bool HasElectricity,
         int MetersFromToilet,
         int? MetersFromPool,

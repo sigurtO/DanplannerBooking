@@ -28,6 +28,9 @@ else
             @foreach (var space in spaces)
             {
                 <tr>
+                    <td><strong>Name:</strong> @space.Name</td>
+                    <td>Location: @space.Location</td>
+                    <td>Description: @space.Description</td>
                     <td>@space.PricePerNight.ToString("C")</td>
                     <td>@(space.IsAvailable ? "✅ Available" : "❌ Unavailable")</td>
                     <td>@(space.HasElectricity ? "⚡ Yes" : "No")</td>
@@ -61,6 +64,21 @@ else
     <EditForm Model="@editSpace" OnValidSubmit="HandleUpdate">
         <DataAnnotationsValidator />
         <ValidationSummary />
+
+        <div>
+            <label>Name:</label>
+            <InputText @bind-Value="editSpace.Name" class="form-control" />
+        </div>
+
+        <div>
+            <label>Location:</label>
+            <InputText @bind-Value="editSpace.Location" class="form-control" />
+        </div>
+
+        <div>
+            <label>Description:</label>
+            <InputText @bind-Value="editSpace.Description" class="form-control" />
+        </div>
 
         <div>
             <label>Price Per Night:</label>
@@ -132,6 +150,9 @@ else
         editSpace = new CreateSpaceDto
         {
             CampsiteId = space.CampsiteId,
+            Name = space.Name,
+            Location = space.Location,
+            Description = space.Description,
             HasElectricity = space.HasElectricity,
             MetersFromToilet = space.MetersFromToilet,
             MetersFromPool = space.MetersFromPool,
@@ -155,6 +176,9 @@ else
                     editingSpaceId,
                     editSpace.CampsiteId,
                     spaces[index].Campsite, // this remains unchanged
+                    editSpace.Name,
+                    editSpace.Location,
+                    editSpace.Description,
                     editSpace.HasElectricity,
                     editSpace.MetersFromToilet,
                     editSpace.MetersFromPool,

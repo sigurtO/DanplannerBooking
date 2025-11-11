@@ -1,0 +1,127 @@
+﻿@page "/create-cottage"
+@using DanplannerBooking.Application.Dtos.Campsite
+@using DanplannerBooking.Application.Dtos.Cottage
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h3>Create New Cottage</h3>
+
+@if (showSuccessMessage)
+{
+    <div class="alert alert-success" role="alert">
+        ✅ Cottage created successfully! Redirecting to cottages page...
+    </div>
+}
+@if (!string.IsNullOrWhiteSpace(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+
+<EditForm Model="@newCottage" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <table class="table table-bordered">
+        <tbody>
+            <tr>
+                <td><label>Campsite:</label></td>
+                <td>
+                    <InputSelect @bind-Value="newCottage.CampsiteId" TValue="Guid" class="form-control">
+                        <option value="@Guid.Empty">-- Select Campsite --</option>
+                        @foreach (var campsite in campsiteOptions)
+                        {
+                            <option value="@campsite.Id">@campsite.Name (@campsite.Location)</option>
+                        }
+                    </InputSelect>
+                </td>
+            </tr>
+            <tr>
+                <td><label>Name:</label></td>
+                <td><InputText @bind-Value="newCottage.Name" class="form-control" /></td>
+            </tr>
+            <tr>
+                <td><label>Location:</label></td>
+                <td><InputText @bind-Value="newCottage.Location" class="form-control" /></td>
+            </tr>
+            <tr>
+                <td><label>Description:</label></td>
+                <td><InputTextArea @bind-Value="newCottage.Description" class="form-control" /></td>
+            </tr>
+            <tr>
+                <td><label>Has Toilet:</label></td>
+                <td><InputCheckbox @bind-Value="newCottage.HasToilet" class="form-check-input" /></td>
+            </tr>
+            <tr>
+                <td><label>Has Shower:</label></td>
+                <td><InputCheckbox @bind-Value="newCottage.HasShower" class="form-check-input" /></td>
+            </tr>
+            <tr>
+                <td><label>Has Kitchen:</label></td>
+                <td><InputCheckbox @bind-Value="newCottage.HasKitchen" class="form-check-input" /></td>
+            </tr>
+            <tr>
+                <td><label>Has Heating:</label></td>
+                <td><InputCheckbox @bind-Value="newCottage.HasHeating" class="form-check-input" /></td>
+            </tr>
+            <tr>
+                <td><label>Has WiFi:</label></td>
+                <td><InputCheckbox @bind-Value="newCottage.HasWiFi" class="form-check-input" /></td>
+            </tr>
+            <tr>
+                <td><label>Available:</label></td>
+                <td><InputCheckbox @bind-Value="newCottage.IsAvailable" class="form-check-input" /></td>
+            </tr>
+            <tr>
+                <td><label>Price Per Night:</label></td>
+                <td><InputNumber @bind-Value="newCottage.PricePerNight" class="form-control" /></td>
+            </tr>
+            <tr>
+                <td><label>Image URL:</label></td>
+                <td><InputText @bind-Value="newCottage.ImageUrl" class="form-control" /></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <button type="submit" class="btn btn-success">Create Cottage</button>
+</EditForm>
+
+@code {
+    private CottageDto newCottage = new();
+    private List<CampsiteResponseDto> campsiteOptions = new();
+    private bool showSuccessMessage = false;
+    private string? error;
+
+    private CampsiteResponseDto? selectedCampsite =>
+        campsiteOptions.FirstOrDefault(c => c.Id == newCottage.CampsiteId);
+
+    private async Task HandleValidSubmit()
+    {
+        error = null;
+
+        if (newCottage.CampsiteId == Guid.Empty)
+        {
+            error = "Please select a campsite.";
+            return;
+        }
+
+        var response = await Http.PostAsJsonAsync("api/cottage", newCottage);
+        if (response.IsSuccessStatusCode)
+        {
+            newCottage = new CottageDto();
+            showSuccessMessage = true;
+
+            await Task.Delay(2000);
+            NavigationManager.NavigateTo("/cottages");
+        }
+        else
+        {
+            var details = await response.Content.ReadAsStringAsync();
+            error = $"Create failed ({(int)response.StatusCode}): {details}";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        campsiteOptions = await Http.GetFromJsonAsync<List<CampsiteResponseDto>>("api/campsite");
+    }
+}
