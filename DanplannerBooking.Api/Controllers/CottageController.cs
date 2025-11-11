@@ -65,7 +65,7 @@ namespace DanplannerBooking.Api.Controllers
             {
                 CampsiteId = updatedDto.CampsiteId,
                 Name = updatedDto.Name,
-    
+                Location = updatedDto.Location,
                 Description = updatedDto.Description,
                 HasToilet = updatedDto.HasToilet,
                 HasShower = updatedDto.HasShower,

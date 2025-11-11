@@ -40,6 +40,9 @@ namespace DanplannerBooking.Api.Controllers
             var newSpace = new Space
             {
                 CampsiteId = spaceDto.CampsiteId,
+                Name = spaceDto.Name,
+                Location = spaceDto.Location,
+                Description = spaceDto.Description,
                 HasElectricity = spaceDto.HasElectricity,
                 MetersFromToilet = spaceDto.MetersFromToilet,
                 MetersFromPool = spaceDto.MetersFromPool,
@@ -61,6 +64,9 @@ namespace DanplannerBooking.Api.Controllers
             var updatedSpace = new Space
             {
                 CampsiteId = updatedDto.CampsiteId,
+                Name = updatedDto.Name,
+                Location = updatedDto.Location,
+                Description = updatedDto.Description,
                 HasElectricity = updatedDto.HasElectricity,
                 MetersFromToilet = updatedDto.MetersFromToilet,
                 MetersFromPool = updatedDto.MetersFromPool,

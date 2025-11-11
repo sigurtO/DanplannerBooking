@@ -1,0 +1,73 @@
+﻿@page "/allCottages"
+@using DanplannerBooking.Application.Dtos.Cottage
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h3>Available Cottages</h3>
+
+@if (cottages == null)
+{
+    <p>Loading cottages...</p>
+}
+else if (cottages.Count == 0)
+{
+    <p>No cottages found.</p>
+}
+else
+{
+    <div class="row">
+        @foreach (var cottage in cottages)
+        {
+            <div class="col-md-6 mb-4">
+                <div class="card shadow-sm">
+                    <div class="row g-0">
+                        <div class="col-md-4">
+                            @if (!string.IsNullOrWhiteSpace(cottage.ImageUrl))
+                            {
+                                <img src="@cottage.ImageUrl" class="img-fluid rounded-start" alt="Cottage image" />
+                            }
+                            else
+                            {
+                                <div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 100%; min-height: 150px;">
+                                    No Image
+                                </div>
+                            }
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title">@cottage.Name</h5>
+                                <p class="card-text">
+                                    <strong>Location:</strong> @cottage.Location<br />
+                                    <strong>Description:</strong> @cottage.Description<br />
+                                    <strong>Price:</strong> @cottage.PricePerNight.ToString("C")<br />
+                                    <strong>Availability:</strong> @(cottage.IsAvailable ? "✅ Available" : "❌ Unavailable")<br />
+                                    <strong>Features:</strong><br />
+                                    🚽 Toilet: @(cottage.HasToilet ? "Yes" : "No")<br />
+                                    🚿 Shower: @(cottage.HasShower ? "Yes" : "No")<br />
+                                    🍳 Kitchen: @(cottage.HasKitchen ? "Yes" : "No")<br />
+                                    🔥 Heating: @(cottage.HasHeating ? "Yes" : "No")<br />
+                                    📶 WiFi: @(cottage.HasWiFi ? "Yes" : "No")
+                                </p>
+                                <button class="btn btn-primary" @onclick="() => NavigateToDetails(cottage.Id)">View Details</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<CottageResponseDto> cottages;
+
+    protected override async Task OnInitializedAsync()
+    {
+        cottages = await Http.GetFromJsonAsync<List<CottageResponseDto>>("api/cottage");
+    }
+
+    private void NavigateToDetails(Guid cottageId)
+    {
+        NavigationManager.NavigateTo($"/cottage/{cottageId}");
+    }
+}

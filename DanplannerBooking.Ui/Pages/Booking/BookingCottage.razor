@@ -1,0 +1,134 @@
+﻿@page "/book-cottage/{cottageId:guid}"
+@using DanplannerBooking.Application.Dtos.Cottage
+@using DanplannerBooking.Application.Dtos.AddOn
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h3>Book Your Cottage</h3>
+
+@if (cottage == null || addOns == null)
+{
+    <p>Loading booking form...</p>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h4>@cottage.Name</h4>
+                    <p><strong>Price:</strong> @cottage.PricePerNight.ToString("C")</p>
+                    <p><strong>Max Capacity:</strong> 6 people</p>
+
+                    <EditForm Model="@bookingModel" OnValidSubmit="SubmitBooking">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="mb-3">
+                            <label>Check-in Date:</label>
+                            <InputDate @bind-Value="bookingModel.DateStart" class="form-control" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Check-out Date:</label>
+                            <InputDate @bind-Value="bookingModel.DateEnd" class="form-control" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Number of People:</label>
+                            <InputNumber @bind-Value="bookingModel.NumberOfPeople" class="form-control" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Add-ons & Extras:</label>
+                            @foreach (var addon in addOns)
+                            {
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input"
+                                           @bind="addonSelections[addon.Id]" />
+                                    <label class="form-check-label">
+                                        <strong>@addon.Name</strong> - @addon.Description (@addon.Price.ToString("C"))
+                                    </label>
+                                </div>
+                            }
+                        </div>
+
+                        <button type="submit" class="btn btn-success">Confirm Booking</button>
+                    </EditForm>
+
+                    <p class="mt-3 text-muted">
+                        • Free cancellation up to 48 hours before check-in<br />
+                        • Check-in: 2:00 PM – 10:00 PM<br />
+                        • Check-out: 11:00 AM
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5>Booking Summary</h5>
+                    <p><strong>Cottage:</strong> @cottage.Name</p>
+                    <p><strong>Guests:</strong> @bookingModel.NumberOfPeople</p>
+                    <p><strong>Dates:</strong> @bookingModel.DateStart.ToShortDateString() – @bookingModel.DateEnd.ToShortDateString()</p>
+                    <p><strong>Add-ons:</strong></p>
+                    <ul>
+                        @foreach (var addon in addOns.Where(a => addonSelections.ContainsKey(a.Id) && addonSelections[a.Id]))
+                        {
+                            <li>@addon.Name (@addon.Price.ToString("C"))</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid cottageId { get; set; }
+
+    private CottageResponseDto? cottage;
+    private List<AddOnResponseDto>? addOns;
+    private Dictionary<Guid, bool> addonSelections = new();
+    private BookingModel bookingModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        cottage = await Http.GetFromJsonAsync<CottageResponseDto>($"api/cottage/{cottageId}");
+        addOns = await Http.GetFromJsonAsync<List<AddOnResponseDto>>("api/addon");
+
+        foreach (var addon in addOns)
+        {
+            addonSelections[addon.Id] = false;
+        }
+
+        bookingModel.CottageId = cottageId;
+        bookingModel.DateStart = DateTime.Today;
+        bookingModel.DateEnd = DateTime.Today.AddDays(1);
+        bookingModel.NumberOfPeople = 2;
+    }
+
+    private async Task SubmitBooking()
+    {
+        bookingModel.AddOnIds = addonSelections
+            .Where(kvp => kvp.Value)
+            .Select(kvp => kvp.Key)
+            .ToList();
+
+        var response = await Http.PostAsJsonAsync("api/booking", bookingModel);
+        if (response.IsSuccessStatusCode)
+        {
+            NavigationManager.NavigateTo("/booking-confirmed");
+        }
+    }
+
+    public class BookingModel
+    {
+        public Guid CottageId { get; set; }
+        public DateTime DateStart { get; set; }
+        public DateTime DateEnd { get; set; }
+        public int NumberOfPeople { get; set; }
+        public List<Guid> AddOnIds { get; set; } = new();
+    }
+}
