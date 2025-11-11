@@ -21,7 +21,7 @@ namespace DanplannerBooking.Infrastructure.Context
         public DbSet<Campsite> Campsites { get; set; }
         public DbSet<Space> Spaces { get; set; }
         public DbSet<Cottage> Cottages { get; set; }
-        public DbSet<Bundle> Bundles { get; set; }
+        //public DbSet<Bundle> Bundles { get; set; }
         public DbSet<AddOn> AddOns { get; set; }
         public DbSet<Booking> Bookings { get; set; }
 

@@ -33,7 +33,7 @@ else
                         🔥 Heating: @(cottage.HasHeating ? "Yes" : "No")<br />
                         📶 WiFi: @(cottage.HasWiFi ? "Yes" : "No")
                     </p>
-                    <button class="btn btn-success">Book Now</button>
+                    <button class="btn btn-success" @onclick="NavigateToBooking">Book Now</button>
                     <p class="mt-2 text-muted">Free cancellation up to 48 hours before check-in</p>
                 </div>
             </div>
@@ -48,5 +48,10 @@ else
     protected override async Task OnInitializedAsync()
     {
         cottage = await Http.GetFromJsonAsync<CottageResponseDto>($"api/cottage/{cottageId}");
+    }
+
+    private void NavigateToBooking()
+    {
+        NavigationManager.NavigateTo($"/book-cottage/{cottageId}");
     }
 }

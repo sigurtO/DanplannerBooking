@@ -1,0 +1,66 @@
+﻿@page "/create-addon"
+@using DanplannerBooking.Application.Dtos.AddOn
+@inject NavigationManager NavigationManager
+@inject HttpClient Http
+
+<h3>Create New Add-On</h3>
+
+@if (showSuccessMessage)
+{
+    <div class="alert alert-success" role="alert">
+        ✅ Add-on created successfully! Redirecting to add-on list...
+    </div>
+}
+
+<EditForm Model="@newAddOn" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <table class="table table-bordered">
+        <tbody>
+            <tr>
+                <td><label>Name:</label></td>
+                <td><InputText @bind-Value="newAddOn.Name" class="form-control" /></td>
+            </tr>
+            <tr>
+                <td><label>Description:</label></td>
+                <td><InputText @bind-Value="newAddOn.Description" class="form-control" /></td>
+            </tr>
+            <tr>
+                <td><label>Price:</label></td>
+                <td><InputNumber @bind-Value="newAddOn.Price" class="form-control" /></td>
+            </tr>
+            <tr>
+                <td><label>Type:</label></td>
+                <td>
+                    <InputSelect @bind-Value="newAddOn.Type" class="form-control">
+                        @foreach (var type in Enum.GetValues<AddOnTypeDto>())
+                        {
+                            <option value="@type">@type</option>
+                        }
+                    </InputSelect>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <button type="submit" class="btn btn-success">Create Add-On</button>
+</EditForm>
+
+@code {
+    private AddOnDto newAddOn = new();
+    private bool showSuccessMessage = false;
+
+    private async Task HandleValidSubmit()
+    {
+        var response = await Http.PostAsJsonAsync("api/addon", newAddOn);
+        if (response.IsSuccessStatusCode)
+        {
+            newAddOn = new AddOnDto(); // Clear the form
+            showSuccessMessage = true;
+
+            await Task.Delay(2000);
+            NavigationManager.NavigateTo("/addons");
+        }
+    }
+}

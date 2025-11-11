@@ -14,7 +14,7 @@ namespace DanplannerBooking.Domain.Entities
         //public ICollection<BundleAddOn> BundleAddOns { get; set; }
     }
 
-    public enum AddOnType
+    public enum AddOnType //move this other place?? we also have one in dto because i neeed to test quick 
     {
         Pet,           // Dog, Cat, etc.
         Cleaning,       // Room cleaning service

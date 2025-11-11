@@ -1,6 +1,7 @@
 ﻿@page "/book-cottage/{cottageId:guid}"
 @using DanplannerBooking.Application.Dtos.Cottage
 @using DanplannerBooking.Application.Dtos.AddOn
+@using DanplannerBooking.Application.Dtos.Booking
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 
@@ -17,26 +18,26 @@ else
             <div class="card mb-4 shadow-sm">
                 <div class="card-body">
                     <h4>@cottage.Name</h4>
-                    <p><strong>Price:</strong> @cottage.PricePerNight.ToString("C")</p>
+                    <p><strong>Price Per Night:</strong> @cottage.PricePerNight.ToString("C")</p>
                     <p><strong>Max Capacity:</strong> 6 people</p>
 
-                    <EditForm Model="@bookingModel" OnValidSubmit="SubmitBooking">
+                    <EditForm Model="@newBooking" OnValidSubmit="SubmitBooking">
                         <DataAnnotationsValidator />
                         <ValidationSummary />
 
                         <div class="mb-3">
                             <label>Check-in Date:</label>
-                            <InputDate @bind-Value="bookingModel.DateStart" class="form-control" />
+                            <InputDate @bind-Value="newBooking.DateStart" class="form-control" />
                         </div>
 
                         <div class="mb-3">
                             <label>Check-out Date:</label>
-                            <InputDate @bind-Value="bookingModel.DateEnd" class="form-control" />
+                            <InputDate @bind-Value="newBooking.DateEnd" class="form-control" />
                         </div>
 
                         <div class="mb-3">
                             <label>Number of People:</label>
-                            <InputNumber @bind-Value="bookingModel.NumberOfPeople" class="form-control" />
+                            <InputNumber @bind-Value="newBooking.NumberOfPeople" class="form-control" />
                         </div>
 
                         <div class="mb-3">
@@ -70,8 +71,8 @@ else
                 <div class="card-body">
                     <h5>Booking Summary</h5>
                     <p><strong>Cottage:</strong> @cottage.Name</p>
-                    <p><strong>Guests:</strong> @bookingModel.NumberOfPeople</p>
-                    <p><strong>Dates:</strong> @bookingModel.DateStart.ToShortDateString() – @bookingModel.DateEnd.ToShortDateString()</p>
+                    <p><strong>Guests:</strong> @newBooking.NumberOfPeople</p>
+                    <p><strong>Dates:</strong> @newBooking.DateStart.ToShortDateString() – @newBooking.DateEnd.ToShortDateString()</p>
                     <p><strong>Add-ons:</strong></p>
                     <ul>
                         @foreach (var addon in addOns.Where(a => addonSelections.ContainsKey(a.Id) && addonSelections[a.Id]))
@@ -79,6 +80,7 @@ else
                             <li>@addon.Name (@addon.Price.ToString("C"))</li>
                         }
                     </ul>
+                    <p><strong>Total Price:</strong> @newBooking.TotalPrice.ToString("C")</p>
                 </div>
             </div>
         </div>
@@ -91,7 +93,8 @@ else
     private CottageResponseDto? cottage;
     private List<AddOnResponseDto>? addOns;
     private Dictionary<Guid, bool> addonSelections = new();
-    private BookingModel bookingModel = new();
+    private BookingDto newBooking = new();
+    private string? error;
 
     protected override async Task OnInitializedAsync()
     {
@@ -103,32 +106,37 @@ else
             addonSelections[addon.Id] = false;
         }
 
-        bookingModel.CottageId = cottageId;
-        bookingModel.DateStart = DateTime.Today;
-        bookingModel.DateEnd = DateTime.Today.AddDays(1);
-        bookingModel.NumberOfPeople = 2;
+        newBooking.CottageId = cottageId;
+        newBooking.Cottage = cottage;
+        newBooking.DateStart = DateTime.Today;
+        newBooking.DateEnd = DateTime.Today.AddDays(1);
+        newBooking.NumberOfPeople = 2;
+        newBooking.UserId = Guid.NewGuid(); // Replace with actual logged-in user ID
+        newBooking.TotalPrice = cottage.PricePerNight;
+        newBooking.Discount = 0;
     }
 
     private async Task SubmitBooking()
     {
-        bookingModel.AddOnIds = addonSelections
-            .Where(kvp => kvp.Value)
-            .Select(kvp => kvp.Key)
+        var selectedAddOns = addOns
+            .Where(a => addonSelections.ContainsKey(a.Id) && addonSelections[a.Id])
             .ToList();
 
-        var response = await Http.PostAsJsonAsync("api/booking", bookingModel);
+        var nights = (newBooking.DateEnd - newBooking.DateStart).Days;
+        var basePrice = cottage.PricePerNight * nights;
+        var addOnTotal = selectedAddOns.Sum(a => a.Price);
+        newBooking.TotalPrice = basePrice + addOnTotal;
+
+        var response = await Http.PostAsJsonAsync("api/booking", newBooking);
         if (response.IsSuccessStatusCode)
         {
+            newBooking = new BookingDto();
             NavigationManager.NavigateTo("/booking-confirmed");
         }
-    }
-
-    public class BookingModel
-    {
-        public Guid CottageId { get; set; }
-        public DateTime DateStart { get; set; }
-        public DateTime DateEnd { get; set; }
-        public int NumberOfPeople { get; set; }
-        public List<Guid> AddOnIds { get; set; } = new();
+        else
+        {
+            var details = await response.Content.ReadAsStringAsync();
+            error = $"Create failed ({(int)response.StatusCode}): {details}";
+        }
     }
 }

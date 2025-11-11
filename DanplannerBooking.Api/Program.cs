@@ -19,6 +19,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICampsiteRepository, CampsiteRepository>();
 builder.Services.AddScoped<ISpaceRepository, SpaceRepository>();
 builder.Services.AddScoped<ICottageRepository, CottageRepository>();
+builder.Services.AddScoped<IAddOnRepository, AddOnRepository>();
+builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 
 
 builder.Services.AddAuthorization(options =>  //Dont know if this works just a test but it's used in controller

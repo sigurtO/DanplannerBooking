@@ -22,4 +22,13 @@ namespace DanplannerBooking.Application.Dtos.AddOn
         decimal Price,
         AddOnType Type
     );
+
+
+    public enum AddOnTypeDto //for testing might move it somewhere else this is def on clean arch 
+    {
+        Pet,           // Dog, Cat, etc.
+        Cleaning,       // Room cleaning service
+        Bubbles,       // Champagne on arrival
+        Equipment      // Extra beds, chairs, etc.
+    }
 }
