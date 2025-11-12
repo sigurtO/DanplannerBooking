@@ -180,9 +180,10 @@ public class UnitsController : ControllerBase
         return NoContent();
     }
 
-    // POST api/units/layout/import
+    // POST api/units/layout/import?campsiteId=...
     [HttpPost("layout/import")]
     public async Task<ActionResult> ImportLayout(
+        [FromQuery] Guid? campsiteId,
         [FromBody] ImportMapRequest body,
         CancellationToken ct)
     {
@@ -191,23 +192,34 @@ public class UnitsController : ControllerBase
             if (body?.Units == null || body.Units.Count == 0)
                 return BadRequest("No units to import.");
 
-            // Ensure a campsite exists
-            var campsite = await _db.Campsites.FirstOrDefaultAsync(ct);
-            if (campsite is null)
+            // Find/brug valgt campsite hvis givet
+            Campsite? campsite = null;
+            if (campsiteId is Guid cid && cid != Guid.Empty)
             {
-                campsite = new Campsite
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "Standard Campingplads",
-                    Description = "Auto-created by layout import",
-                    Location = "N/A"
-                };
-                await _db.Campsites.AddAsync(campsite, ct);
-                await _db.SaveChangesAsync(ct);
+                campsite = await _db.Campsites.FirstOrDefaultAsync(c => c.Id == cid, ct);
+                if (campsite is null)
+                    return NotFound($"Campsite {cid} findes ikke.");
             }
-            var campsiteId = campsite.Id;
+            else
+            {
+                // fallback: første eller opret en standard
+                campsite = await _db.Campsites.FirstOrDefaultAsync(ct);
+                if (campsite is null)
+                {
+                    campsite = new Campsite
+                    {
+                        Id = Guid.NewGuid(),
+                        Name = "Standard Campingplads",
+                        Description = "Auto-created by layout import",
+                        Location = "N/A"
+                    };
+                    await _db.Campsites.AddAsync(campsite, ct);
+                    await _db.SaveChangesAsync(ct);
+                }
+            }
+            var attachCid = campsite.Id;
 
-            // Load existing
+            // Load eksisterende
             var spaces = await _db.Spaces.ToListAsync(ct);
             var cottages = await _db.Cottages.ToListAsync(ct);
 
@@ -242,7 +254,7 @@ public class UnitsController : ControllerBase
                         {
                             Id = u.Id ?? Guid.NewGuid(),
                             Name = string.IsNullOrWhiteSpace(u.Name) ? "Plads" : u.Name!,
-                            CampsiteId = campsiteId,
+                            CampsiteId = attachCid,
                             X = u.X,
                             Y = u.Y,
                             ImageUrl = "",
@@ -253,6 +265,7 @@ public class UnitsController : ControllerBase
                     }
                     else
                     {
+                        entity.CampsiteId = attachCid; // <- sikre at den hører til valgt plads
                         entity.X = u.X;
                         entity.Y = u.Y;
                         updated++;
@@ -274,7 +287,7 @@ public class UnitsController : ControllerBase
                         {
                             Id = u.Id ?? Guid.NewGuid(),
                             Name = string.IsNullOrWhiteSpace(u.Name) ? "Hytte" : u.Name!,
-                            CampsiteId = campsiteId,
+                            CampsiteId = attachCid,
                             X = u.X,
                             Y = u.Y,
                             Description = "N/A",
@@ -285,6 +298,7 @@ public class UnitsController : ControllerBase
                     }
                     else
                     {
+                        entity.CampsiteId = attachCid; // <- sikre at den hører til valgt plads
                         entity.X = u.X;
                         entity.Y = u.Y;
                         updated++;

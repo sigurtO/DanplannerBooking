@@ -1,6 +1,6 @@
 ﻿// wwwroot/js/map.js
 window.CampsiteMap = (function () {
-    // --- Pan & Zoom via SVG viewBox (reliable) ---
+    // --- Pan & Zoom via SVG viewBox ---
     function initPanZoom(containerSel, svgSel) {
         const container = document.querySelector(containerSel);
         const svg = container ? container.querySelector(svgSel) : null;
@@ -21,7 +21,7 @@ window.CampsiteMap = (function () {
         }
 
         svg.addEventListener("mousedown", (e) => {
-            if (e.target?.closest?.(".unit")) return; // don't pan when starting on a marker
+            if (e.target?.closest?.(".unit")) return;
             isPanning = true;
             panStart = { x: e.clientX, y: e.clientY };
             vbStart = { vx, vy };
@@ -47,15 +47,15 @@ window.CampsiteMap = (function () {
         }, { passive: false });
 
         applyVB();
-        console.log("initPanZoom(viewBox): OK");
+        console.log("CampsiteMap.initPanZoom: OK");
     }
 
-    // --- Delegated drag for any <g class="unit" data-id="..."> ---
+    // --- Delegated drag for any <g class="unit"> ---
     function enableDrag(svgSelector, _itemSelector, dotNetRef) {
         const svg = document.querySelector(svgSelector);
         if (!svg) { console.warn("enableDrag: svg not found", svgSelector); return; }
 
-        let dragging = null; // { el, id, startMouse:{x,y}, startPos:{x,y} }
+        let dragging = null;
 
         function clientToSvgPoint(evt) {
             const pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
@@ -70,7 +70,7 @@ window.CampsiteMap = (function () {
 
         svg.addEventListener("mousedown", (e) => {
             const unitEl = e.target?.closest?.(".unit");
-            if (!unitEl) return; // let pan handle it
+            if (!unitEl) return;
             e.stopPropagation(); e.preventDefault();
             const id = unitEl.getAttribute("data-id"); if (!id) return;
             const m = clientToSvgPoint(e);
@@ -99,26 +99,38 @@ window.CampsiteMap = (function () {
             dragging = null;
         });
 
-        console.log("enableDrag(delegated): ready");
+        console.log("CampsiteMap.enableDrag: ready");
     }
 
-    // --- NY: one-shot pick på kortet (returnerer X,Y i SVG-koordinater) ---
+    // --- One-shot pick (klik på kortet => X,Y) ---
     function pickPoint(svgSelector, dotnetRef, callbackMethodName) {
         const svg = document.querySelector(svgSelector);
-        if (!svg) return;
+        if (!svg) { console.warn("pickPoint: svg not found:", svgSelector); return; }
+
+        // Fjern evt. tidligere one-shot handler
+        if (svg.__cmPickHandler) {
+            svg.removeEventListener("click", svg.__cmPickHandler, true);
+            svg.__cmPickHandler = null;
+        }
 
         function clientToSvgPoint(evt) {
             const pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
             const ctm = svg.getScreenCTM(); if (!ctm) return { x: 0, y: 0 };
-            const p = pt.matrixTransform(ctm.inverse()); return { x: p.x, y: p.y };
+            const p = pt.matrixTransform(ctm.inverse());
+            return { x: Math.round(p.x), y: Math.round(p.y) };
         }
 
-        function handler(evt) {
+        const handler = function (evt) {
             const p = clientToSvgPoint(evt);
-            svg.removeEventListener('click', handler, true);
-            dotnetRef?.invokeMethodAsync?.(callbackMethodName, Math.round(p.x), Math.round(p.y));
-        }
-        svg.addEventListener('click', handler, true);
+            svg.removeEventListener("click", handler, true);
+            svg.__cmPickHandler = null;
+            console.log("CampsiteMap.pickPoint: clicked =>", p);
+            dotnetRef?.invokeMethodAsync?.(callbackMethodName, p.x, p.y);
+        };
+
+        svg.__cmPickHandler = handler;
+        svg.addEventListener("click", handler, true);
+        console.log("CampsiteMap.pickPoint: armed (waiting for click)");
     }
 
     function downloadText(filename, text) {
@@ -128,6 +140,6 @@ window.CampsiteMap = (function () {
         setTimeout(() => URL.revokeObjectURL(url), 800);
     }
 
-    console.log("CampsiteMap loaded (viewBox + delegated drag + pickPoint)");
+    console.log("CampsiteMap loaded (viewBox + drag + pickPoint)");
     return { initPanZoom, enableDrag, pickPoint, downloadText };
 })();

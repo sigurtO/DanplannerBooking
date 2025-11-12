@@ -7,6 +7,7 @@
 @inject HttpClient Http
 
 <h2>🗺️ Kort-editor</h2>
+<p class="text-muted">Vælg campingplads, importer/opret enheder, træk markører, og gem layout.</p>
 
 <div class="mb-3" style="display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap;">
     <div style="min-width:320px; max-width:420px">
@@ -36,7 +37,7 @@
                     <div>
                         <div class="fw-bold">@SelectedCampsite.Name</div>
                         <div class="text-muted" style="font-size:.9rem;">
-                            Hytter: @Units.Count(u => u.ProductType=="Hytte") • Pladser: @Units.Count(u => u.ProductType=="Plads")
+                            Hytter: @Units.Count(u => u.ProductType == "Hytte") • Pladser: @Units.Count(u => u.ProductType == "Plads")
                         </div>
                         <div class="text-muted" style="font-size:.85rem;">Billedsti: <code>@BgImageUrl</code></div>
                     </div>
@@ -55,7 +56,7 @@
         <h3>Værktøjer</h3>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
-            <button class="btn btn-primary" @onclick="AddTent"  disabled="@DisabledNoCampsite">+ Teltplads</button>
+            <button class="btn btn-primary" @onclick="AddTent" disabled="@DisabledNoCampsite">+ Teltplads</button>
             <button class="btn btn-primary" @onclick="AddCabin" disabled="@DisabledNoCampsite">+ Hytte</button>
         </div>
 
@@ -83,12 +84,19 @@
         <hr />
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
             <button class="btn btn-outline-primary" @onclick="ExportJson" disabled="@DisabledNoCampsite">⬇️ Export</button>
+
             <label class="btn btn-outline-secondary" style="margin:0;">
                 ⬆️ Import
                 <InputFile OnChange="ImportJson" accept=".json,.txt,application/json" class="ms-2" />
             </label>
-            <button class="btn btn-outline-warning" @onclick="CreateNewInDb" disabled="@DisabledNoNew">Opret nye i DB</button>
-            <button class="btn btn-success" @onclick="SaveLayout" disabled="@DisabledNoDb">Gem layout</button>
+
+            <button class="btn btn-outline-warning" @onclick="CreateNewInDb" disabled="@DisabledNoNew">
+                Opret nye i DB
+            </button>
+
+            <button class="btn btn-success" @onclick="SaveLayout" disabled="@DisabledNoDb">
+                Gem layout
+            </button>
         </div>
 
         <hr />
@@ -97,12 +105,12 @@
             <option value="">— vælg enhed (uden placering) —</option>
             @foreach (var o in Options)
             {
-                <option value="@o.Id">@o.Name (@(o.Type=="Cottage"?"Hytte":"Plads"))</option>
+                <option value="@o.Id">@o.Name (@(o.Type == "Cottage" ? "Hytte" : "Plads"))</option>
             }
         </select>
         <div class="mt-2" style="display:flex; gap:8px;">
             <button class="btn btn-outline-secondary" @onclick="LoadOptions">Opdater liste</button>
-            <button class="btn btn-primary" @onclick="StartPlaceOnMap" disabled="@string.IsNullOrEmpty(SelectedOptionId)">
+            <button class="btn btn-primary" type="button" @onclick="StartPlaceOnMap" disabled="@string.IsNullOrEmpty(SelectedOptionId)">
                 Placer markør på kort
             </button>
         </div>
@@ -136,10 +144,12 @@
                         <circle r="12" style="fill:rgba(0,200,0,.6); @border"></circle>
                     }
                     <text y="-20" text-anchor="middle" fill="white" font-size="12">
-                        @u.Name @if(!u.FromDb){ <tspan fill="#ffd54f"> (ny)</tspan> }
-                    </text>
-                </g>
-            }
+                        @u.Name @if(!u.FromDb){
+                        <tspan fill="#ffd54f"> (ny)</tspan>
+                    }
+                </text>
+            </g>
+                        }
         </svg>
     </div>
 </div>
@@ -159,7 +169,7 @@
 
     private bool DisabledNoCampsite => string.IsNullOrEmpty(SelectedCampsiteId);
     private bool DisabledNoNew => DisabledNoCampsite || !Units.Any(u => !u.FromDb);
-    private bool DisabledNoDb  => DisabledNoCampsite || !Units.Any(u => u.FromDb);
+    private bool DisabledNoDb => DisabledNoCampsite || !Units.Any(u => u.FromDb);
 
     // ---------- Status ----------
     private string? StatusMessage;
@@ -179,7 +189,7 @@
     private string? _selectedId;
     private EditableUnit? Selected => Units.FirstOrDefault(z => z.Id == _selectedId);
 
-    // ---------- Options (ubelagte DB-enheder) ----------
+    // ---------- Options ----------
     private sealed class UnitOption
     {
         public string Id { get; set; } = "";
@@ -203,12 +213,9 @@
 
     private async Task LoadCampsites()
     {
-        Campsites = (await Http.GetFromJsonAsync<List<UiCampsite>>("api/campsites"))?.Select(c => new UiCampsite
-        {
-            Id = c.Id, Name = c.Name, ImageUrl = string.IsNullOrWhiteSpace(c.ImageUrl) ? "" : c.ImageUrl
-        }).OrderBy(c=>c.Name).ToList() ?? new();
+        try { Campsites = (await Http.GetFromJsonAsync<List<UiCampsite>>("api/campsites"))?.ToList() ?? new(); }
+        catch { Campsites = new(); }
 
-        // auto-vælg første hvis ønsket
         if (string.IsNullOrEmpty(SelectedCampsiteId) && Campsites.Count > 0)
             SelectedCampsiteId = Campsites[0].Id;
 
@@ -216,14 +223,14 @@
         StateHasChanged();
     }
 
-    private async Task OnCampsiteChanged()
-    {
-        await RefreshForCampsite();
-    }
+    private async Task OnCampsiteChanged() => await RefreshForCampsite();
 
     private async Task RefreshForCampsite()
     {
-        if (string.IsNullOrEmpty(SelectedCampsiteId)) { Units.Clear(); Options.Clear(); StateHasChanged(); return; }
+        if (string.IsNullOrEmpty(SelectedCampsiteId))
+        {
+            Units.Clear(); Options.Clear(); StateHasChanged(); return;
+        }
         await LoadFromApi();
         await LoadOptions();
     }
@@ -277,7 +284,10 @@
             : $"{{\"createMissing\":true,\"units\":{text}}}";
 
         var content = new StringContent(payload, System.Text.Encoding.UTF8, "application/json");
-        var resp = await Http.PostAsync("api/units/layout/import", content);
+
+        // ✅ pass campsiteId so backend attaches to the same campsite you’ve selected
+        var url = $"api/units/layout/import?campsiteId={SelectedCampsiteId}";
+        var resp = await Http.PostAsync(url, content);
 
         if (resp.IsSuccessStatusCode)
         {
@@ -293,6 +303,7 @@
         StateHasChanged();
     }
 
+
     private async Task LoadFromApi()
     {
         try
@@ -305,7 +316,9 @@
                 Id = d.Id.ToString(),
                 Name = d.Name,
                 ProductType = d.Type == "Cottage" ? "Hytte" : "Plads",
-                X = d.X, Y = d.Y, FromDb = true
+                X = d.X,
+                Y = d.Y,
+                FromDb = true
             }).ToList();
 
             StatusKind = "info";
@@ -338,13 +351,16 @@
                 id = (Guid?)null,
                 name = u.Name,
                 type = u.ProductType == "Hytte" ? "Cottage" : "Space",
-                x = u.X, y = u.Y
+                x = u.X,
+                y = u.Y
             }).ToList()
         };
 
         try
         {
-            var resp = await Http.PostAsJsonAsync("api/units/layout/import", body);
+            // ✅ attach to the selected campsite
+            var url = $"api/units/layout/import?campsiteId={SelectedCampsiteId}";
+            var resp = await Http.PostAsJsonAsync(url, body);
             if (resp.IsSuccessStatusCode)
             {
                 StatusKind = "success";
@@ -365,6 +381,7 @@
         StateHasChanged();
     }
 
+
     private async Task SaveLayout()
     {
         try
@@ -382,10 +399,13 @@
             {
                 id = Guid.TryParse(u.Id, out var gid) ? gid : Guid.Empty,
                 type = u.ProductType == "Hytte" ? "Cottage" : "Space",
-                x = u.X, y = u.Y
+                x = u.X,
+                y = u.Y
             }).Where(x => x.id != Guid.Empty).ToList();
 
-            var resp = await Http.PutAsJsonAsync("api/units/layout", payload);
+            var url = $"api/units/layout?campsiteId={SelectedCampsiteId}";
+            var resp = await Http.PutAsJsonAsync(url, payload);
+
             if (resp.IsSuccessStatusCode)
             {
                 StatusKind = "success";
@@ -422,8 +442,9 @@
         StatusMessage = "Klik på kortet for at vælge position…";
         StateHasChanged();
 
+        Console.WriteLine("Arm pickPoint");
         await JS.InvokeVoidAsync("CampsiteMap.pickPoint", "#campsiteSvg",
-            DotNetObjectReference.Create(this), nameof(OnPickPoint));
+          DotNetObjectReference.Create(this), nameof(OnPickPoint));
     }
 
     [JSInvokable]
