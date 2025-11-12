@@ -8,13 +8,13 @@ namespace DanplannerBooking.Domain.Entities
         public string Description { get; set; }
         public decimal Price { get; set; }
         public AddOnType Type { get; set; }
-        public bool IsActive { get; set; } = true; // Soft delete
+        //public bool IsActive { get; set; } = true; // Soft delete  NOT needed
 
         public ICollection<BookingAddOn> BookingAddOns { get; set; }
-        public ICollection<BundleAddOn> BundleAddOns { get; set; }
+        //public ICollection<BundleAddOn> BundleAddOns { get; set; }
     }
 
-    public enum AddOnType
+    public enum AddOnType //move this other place?? we also have one in dto because i neeed to test quick 
     {
         Pet,           // Dog, Cat, etc.
         Cleaning,       // Room cleaning service

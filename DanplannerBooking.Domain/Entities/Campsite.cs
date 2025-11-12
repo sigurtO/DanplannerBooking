@@ -22,6 +22,7 @@ namespace DanplannerBooking.Domain.Entities
 
         public ICollection<Space> Spaces { get; set; } // one to many relationship
         public ICollection<Cottage> Cottages { get; set; } // one to many relationship
+        //may need to add Bundle here depends on how we implement it
     }
 
 

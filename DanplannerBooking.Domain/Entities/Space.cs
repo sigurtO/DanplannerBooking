@@ -6,6 +6,9 @@
         public Guid CampsiteId { get; set; }
         public Campsite Campsite { get; set; }
 
+        public string Name { get; set; } // new
+        public string Location { get; set; } // new
+        public string Description { get; set; } // new
         public bool HasElectricity { get; set; }
         public int MetersFromToilet { get; set; }
 

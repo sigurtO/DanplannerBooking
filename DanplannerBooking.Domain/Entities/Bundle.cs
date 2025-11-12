@@ -3,7 +3,7 @@ namespace DanplannerBooking.Domain.Entities
 {
     public class Bundle
     {
-        public Guid Id { get; set; }
+        public Guid Id { get; set; } //not fixed
         public string Name { get; set; }
         public string Description { get; set; }
         public decimal BasePrice { get; set; }

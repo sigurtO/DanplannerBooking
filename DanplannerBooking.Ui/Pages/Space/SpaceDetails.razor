@@ -20,8 +20,10 @@ else
             </div>
             <div class="col-md-7">
                 <div class="card-body">
-                    <h4 class="card-title">Space @space.Id.ToString().Substring(0, 4)</h4>
+                    <h4 class="card-title"> @space.Name</h4>
                     <p class="card-text">
+                        <strong>Location:</strong> @space.Location<br />
+                        <strong>Description:</strong> @space.Description<br />
                         <strong>Price:</strong> @space.PricePerNight.ToString("C")<br />
                         <strong>Status:</strong> @(space.IsAvailable ? "✅ Available" : "❌ Unavailable")<br />
                         <strong>Electricity:</strong> @(space.HasElectricity ? "⚡ Yes" : "No")<br />
