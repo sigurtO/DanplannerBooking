@@ -1,16 +1,16 @@
-﻿version: '3.9'
+﻿    version: '3.9'
 
-services:
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: sqlserver
-    ports:
-      - "1433:1433"
-    environment:
-      ACCEPT_EULA: "Y"
-      SA_PASSWORD: "MySqlServer123!"
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest # SQL Server 2022 image
+        container_name: sqlserver 
+        ports:
+          - "1433:1433" # default sql server port
+        environment:
+          ACCEPT_EULA: "Y" #sql license acceptance
+          SA_PASSWORD: "MySqlServer123!"
+        volumes:
+          - sqlvolume:/var/opt/mssql #saves data in volume
+
     volumes:
-      - sqlvolume:/var/opt/mssql
-
-volumes:
-  sqlvolume:
+      sqlvolume:
