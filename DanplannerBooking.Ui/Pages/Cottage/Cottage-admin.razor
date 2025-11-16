@@ -1,5 +1,6 @@
 ﻿@page "/cottages-admin"
 @using DanplannerBooking.Application.Dtos.Cottage
+@inject HttpClient Http
 
 <h3>All Cottages</h3>
 
@@ -43,9 +44,14 @@ else
                         📶 WiFi: @(cottage.HasWiFi ? "Yes" : "No")
                     </td>
                     <td>
-                        @if (!string.IsNullOrWhiteSpace(cottage.ImageUrl))
+                        @if (cottage.Image != null && cottage.Image.Length > 0)
                         {
-                            <img src="@cottage.ImageUrl" alt="cottage image" width="100" />
+                            <img src="@($"data:image/png;base64,{Convert.ToBase64String(cottage.Image)}")"
+                                 alt="cottage image" width="100" />
+                        }
+                        else
+                        {
+                            <span class="text-muted">No Image</span>
                         }
                     </td>
                     <td>
@@ -115,9 +121,16 @@ else
             <label class="form-check-label">Has WiFi</label>
         </div>
 
+        <!-- 🖼️ Image Upload -->
         <div>
-            <label>Image URL:</label>
-            <InputText @bind-Value="editCottage.ImageUrl" class="form-control" />
+            <label>Upload New Image:</label>
+            <InputFile OnChange="HandleImageFile" accept=".jpg,.jpeg,.png" />
+            @if (imagePreview != null)
+            {
+                <div style="margin-top:1rem; border:solid 1px #ccc; width:254px; height:254px;">
+                    <img src="@imagePreview" alt="Image Preview" style="width:250px; height:250px;" />
+                </div>
+            }
         </div>
 
         <button type="submit" class="btn btn-success">Save Changes</button>
@@ -129,6 +142,9 @@ else
     private List<CottageResponseDto> cottages;
     private CottageDto editCottage;
     private Guid editingCottageId;
+
+    // 🖼️ Preview string
+    private string? imagePreview;
 
     protected override async Task OnInitializedAsync()
     {
@@ -160,8 +176,18 @@ else
             HasWiFi = cottage.HasWiFi,
             IsAvailable = cottage.IsAvailable,
             PricePerNight = cottage.PricePerNight,
-            ImageUrl = cottage.ImageUrl
+            Image = cottage.Image
         };
+
+        // Show current image preview
+        if (cottage.Image != null && cottage.Image.Length > 0)
+        {
+            imagePreview = $"data:image/png;base64,{Convert.ToBase64String(cottage.Image)}";
+        }
+        else
+        {
+            imagePreview = null;
+        }
     }
 
     private async Task HandleUpdate()
@@ -186,15 +212,39 @@ else
                     editCottage.HasWiFi,
                     editCottage.IsAvailable,
                     editCottage.PricePerNight,
-                    editCottage.ImageUrl
+                    editCottage.Image
                 );
             }
             editCottage = null;
+            imagePreview = null;
         }
     }
 
     private void CancelEdit()
     {
         editCottage = null;
+        imagePreview = null;
+    }
+
+    // 🖼️ Handle image upload
+    private async Task HandleImageFile(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            if (file.Size < 150000) // limit ~150KB
+            {
+                using var stream = new MemoryStream();
+                await file.OpenReadStream().CopyToAsync(stream);
+                var imageBytes = stream.ToArray();
+
+                // Save into DTO
+                editCottage.Image = imageBytes;
+
+                // Preview
+                imagePreview = $"data:{file.ContentType};base64,{Convert.ToBase64String(imageBytes)}";
+            }
+        }
     }
 }
+

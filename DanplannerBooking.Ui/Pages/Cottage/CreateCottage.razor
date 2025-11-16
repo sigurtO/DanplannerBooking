@@ -1,8 +1,10 @@
 ﻿@page "/create-cottage"
 @using DanplannerBooking.Application.Dtos.Campsite
 @using DanplannerBooking.Application.Dtos.Cottage
+@using DanplannerBooking.Application.Interfaces
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
+@inject IImageRepository ImageRepository
 
 <h3>Create New Cottage</h3>
 
@@ -75,9 +77,18 @@
                 <td><label>Price Per Night:</label></td>
                 <td><InputNumber @bind-Value="newCottage.PricePerNight" class="form-control" /></td>
             </tr>
+            <!-- 🖼️ Image Upload -->
             <tr>
-                <td><label>Image URL:</label></td>
-                <td><InputText @bind-Value="newCottage.ImageUrl" class="form-control" /></td>
+                <td><label>Cottage Image:</label></td>
+                <td>
+                    <InputFile OnChange="HandleImageFile" accept=".jpg,.jpeg,.png" />
+                    @if (imagePreview != null)
+                    {
+                        <div style="margin-top:1rem; border:solid 1px #ccc; width:254px; height:254px;">
+                            <img src="@imagePreview" alt="Image Preview" style="width:250px; height:250px;" />
+                        </div>
+                    }
+                </td>
             </tr>
         </tbody>
     </table>
@@ -90,6 +101,9 @@
     private List<CampsiteResponseDto> campsiteOptions = new();
     private bool showSuccessMessage = false;
     private string? error;
+
+    // 🖼️ Preview string
+    private string? imagePreview;
 
     private CampsiteResponseDto? selectedCampsite =>
         campsiteOptions.FirstOrDefault(c => c.Id == newCottage.CampsiteId);
@@ -108,6 +122,7 @@
         if (response.IsSuccessStatusCode)
         {
             newCottage = new CottageDto();
+            imagePreview = null;
             showSuccessMessage = true;
 
             await Task.Delay(2000);
@@ -123,5 +138,20 @@
     protected override async Task OnInitializedAsync()
     {
         campsiteOptions = await Http.GetFromJsonAsync<List<CampsiteResponseDto>>("api/campsite");
+    }
+
+    // 🖼️ Handle image upload using repository
+    private async Task HandleImageFile(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (ImageRepository.ValidateFile(file, 150000))
+        {
+            newCottage.Image = await ImageRepository.ConvertToBytesAsync(file, 150000);
+            imagePreview = $"data:{file.ContentType};base64,{Convert.ToBase64String(newCottage.Image)}";
+        }
+        else
+        {
+            error = "Invalid image file.";
+        }
     }
 }

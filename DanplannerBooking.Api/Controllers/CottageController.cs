@@ -50,7 +50,7 @@ namespace DanplannerBooking.Api.Controllers
                 HasWiFi = cottageDto.HasWiFi,
                 IsAvailable = cottageDto.IsAvailable,
                 PricePerNight = cottageDto.PricePerNight,
-                ImageUrl = cottageDto.ImageUrl
+                Image = cottageDto.Image
             };
 
             await _cottageRepository.CreateAsync(newCottage);
@@ -74,7 +74,7 @@ namespace DanplannerBooking.Api.Controllers
                 HasWiFi = updatedDto.HasWiFi,
                 IsAvailable = updatedDto.IsAvailable,
                 PricePerNight = updatedDto.PricePerNight,
-                ImageUrl = updatedDto.ImageUrl
+                Image = updatedDto.Image
             };
 
             var result = await _cottageRepository.UpdateAsync(id, updatedCottage);
