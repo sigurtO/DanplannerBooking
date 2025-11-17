@@ -50,7 +50,7 @@ namespace DanplannerBooking.Infrastructure.Repository
             existingCottage.HasWiFi = cottageUpdated.HasWiFi;
             existingCottage.IsAvailable = cottageUpdated.IsAvailable;
             existingCottage.PricePerNight = cottageUpdated.PricePerNight;
-            existingCottage.ImageUrl = cottageUpdated.ImageUrl;
+            existingCottage.Image = cottageUpdated.Image;
             existingCottage.CampsiteId = cottageUpdated.CampsiteId;
 
             await _context.SaveChangesAsync();

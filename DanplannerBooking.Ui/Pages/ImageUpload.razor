@@ -1,0 +1,48 @@
+﻿<div class="mb-3">
+    <label for="@InputId" class="form-label">@Label</label>
+    <div class="custom-file-input">
+        <InputFile id="@InputId"
+                   accept=".jpg,.jpeg,.png"
+                   OnChange="HandleImageFile" />
+        <span class="custom-file-label">Choose File</span>
+    </div>
+
+    @if (ImagePreview != null)
+    {
+        <div style="margin: 1rem; border: solid black 2px; width: 254px; height: 254px;">
+            <img src="@ImagePreview" alt="Image Preview" style="width: 250px; height: 250px;" />
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Label { get; set; } = "Upload Image";
+    [Parameter] public string InputId { get; set; } = "imageUpload";
+    [Parameter] public EventCallback<byte[]> OnImageSelected { get; set; }
+
+    private string? ImagePreview;
+
+    private async Task HandleImageFile(InputFileChangeEventArgs e)
+    {
+        if (e.File != null)
+        {
+            if (e.File.Size < 150000) // limit ~150KB
+            {
+                using var stream = new MemoryStream();
+                await e.File.OpenReadStream().CopyToAsync(stream);
+                var imageBytes = stream.ToArray();
+
+                // Image preview
+                ImagePreview = $"data:{e.File.ContentType};base64,{Convert.ToBase64String(imageBytes)}";
+
+                // Event callback to parent
+                await OnImageSelected.InvokeAsync(imageBytes);
+            }
+            else
+            {
+                // Optional: you could add a parameter for error handling
+                Console.WriteLine("Image too large. Please upload under 150KB.");
+            }
+        }
+    }
+}

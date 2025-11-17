@@ -76,8 +76,10 @@
                 <td><InputNumber @bind-Value="newCottage.PricePerNight" class="form-control" /></td>
             </tr>
             <tr>
-                <td><label>Image URL:</label></td>
-                <td><InputText @bind-Value="newCottage.ImageUrl" class="form-control" /></td>
+                <ImageUpload Label="Cottage Image"
+                             InputId="cottageimage"
+                             OnImageSelected="HandleCottageImage" />
+
             </tr>
         </tbody>
     </table>
@@ -123,5 +125,10 @@
     protected override async Task OnInitializedAsync()
     {
         campsiteOptions = await Http.GetFromJsonAsync<List<CampsiteResponseDto>>("api/campsite");
+    }
+
+    private void HandleCottageImage(byte[] imageBytes)
+    {
+        newCottage.Image = imageBytes;
     }
 }

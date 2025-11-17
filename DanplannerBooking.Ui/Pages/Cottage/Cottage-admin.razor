@@ -117,7 +117,7 @@ else
 
         <div>
             <label>Image URL:</label>
-            <InputText @bind-Value="editCottage.ImageUrl" class="form-control" />
+            <InputText @bind-Value="editCottage.Image" class="form-control" />
         </div>
 
         <button type="submit" class="btn btn-success">Save Changes</button>
@@ -160,7 +160,7 @@ else
             HasWiFi = cottage.HasWiFi,
             IsAvailable = cottage.IsAvailable,
             PricePerNight = cottage.PricePerNight,
-            ImageUrl = cottage.ImageUrl
+            Image = cottage.ImageUrl
         };
     }
 
@@ -186,7 +186,7 @@ else
                     editCottage.HasWiFi,
                     editCottage.IsAvailable,
                     editCottage.PricePerNight,
-                    editCottage.ImageUrl
+                    editCottage.Image
                 );
             }
             editCottage = null;

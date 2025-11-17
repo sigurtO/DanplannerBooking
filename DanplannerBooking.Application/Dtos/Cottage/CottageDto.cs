@@ -24,7 +24,7 @@ namespace DanplannerBooking.Application.Dtos.Cottage
 
         public bool IsAvailable { get; set; }
         public decimal PricePerNight { get; set; }
-        public string ImageUrl { get; set; }
+        public byte[] Image { get; set; }
     }
 
 
@@ -42,6 +42,6 @@ namespace DanplannerBooking.Application.Dtos.Cottage
         bool HasWiFi,
         bool IsAvailable,
         decimal PricePerNight,
-        string ImageUrl
+        byte[] Image
     );
 }
