@@ -1,0 +1,57 @@
+﻿@page "/cottage/{cottageId:guid}"
+@using DanplannerBooking.Application.Dtos.Cottage
+@inject HttpClient Http
+
+<h3>Cottage Details</h3>
+
+@if (cottage == null)
+{
+    <p>Loading cottage...</p>
+}
+else
+{
+    <div class="card mb-4 shadow-sm">
+        <div class="row g-0">
+            <div class="col-md-5">
+                @if (!string.IsNullOrWhiteSpace(cottage.ImageUrl))
+                {
+                    <img src="@cottage.ImageUrl" class="img-fluid rounded-start" alt="Cottage image" />
+                }
+            </div>
+            <div class="col-md-7">
+                <div class="card-body">
+                    <h4 class="card-title">@cottage.Name</h4>
+                    <p class="card-text">
+                        <strong>Location:</strong> @cottage.Location<br />
+                        <strong>Description:</strong> @cottage.Description<br />
+                        <strong>Price:</strong> @cottage.PricePerNight.ToString("C")<br />
+                        <strong>Status:</strong> @(cottage.IsAvailable ? "✅ Available" : "❌ Unavailable")<br />
+                        <strong>Features:</strong><br />
+                        🚽 Toilet: @(cottage.HasToilet ? "Yes" : "No")<br />
+                        🚿 Shower: @(cottage.HasShower ? "Yes" : "No")<br />
+                        🍳 Kitchen: @(cottage.HasKitchen ? "Yes" : "No")<br />
+                        🔥 Heating: @(cottage.HasHeating ? "Yes" : "No")<br />
+                        📶 WiFi: @(cottage.HasWiFi ? "Yes" : "No")
+                    </p>
+                    <button class="btn btn-success" @onclick="NavigateToBooking">Book Now</button>
+                    <p class="mt-2 text-muted">Free cancellation up to 48 hours before check-in</p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid cottageId { get; set; }
+    private CottageResponseDto? cottage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        cottage = await Http.GetFromJsonAsync<CottageResponseDto>($"api/cottage/{cottageId}");
+    }
+
+    private void NavigateToBooking()
+    {
+        NavigationManager.NavigateTo($"/book-cottage/{cottageId}");
+    }
+}

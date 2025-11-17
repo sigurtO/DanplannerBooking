@@ -4,9 +4,13 @@
     {
         public Guid Id { get; set; }
         public Guid CampsiteId { get; set; }
+
+        // Navigation property (fra master)
+        public Campsite Campsite { get; set; } = default!;
+
         public string Name { get; set; } = default!;
-        public string Location { get; set; }
-        public string Description { get; set; }
+        public string Location { get; set; } = default!;
+        public string Description { get; set; } = default!;
 
         // NEW: editor layout coords (SVG pixel space)
         public int X { get; set; }  // default 0
@@ -18,14 +22,3 @@
         public bool HasKitchen { get; set; }
         public bool HasHeating { get; set; }
         public bool HasWiFi { get; set; }
-
-        public bool IsAvailable { get; set; }
-        public decimal PricePerNight { get; set; }
-        public string ImageUrl { get; set; }
-    }
-
-
-
-
-
-}

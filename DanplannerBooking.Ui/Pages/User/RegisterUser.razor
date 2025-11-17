@@ -1,0 +1,67 @@
+﻿@page "/register"
+@inject NavigationManager NavigationManager
+
+<h3>Register New User</h3>
+
+@if (showSuccessMessage)
+{
+    <div class="alert alert-success" role="alert">
+        ✅ User registered successfully! Redirecting to users page...
+    </div>
+}
+
+<EditForm Model="@registerUser" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <table class="table table-bordered">
+        <tbody>
+            <tr>
+                <td><label>Name:</label></td>
+                <td><InputText @bind-Value="registerUser.Name" class="form-control" /></td>
+            </tr>
+            <tr>
+                <td><label>Password:</label></td>
+                <td><InputText @bind-Value="registerUser.Password" type="password" class="form-control" /></td>
+            </tr>
+            <tr>
+                <td><label>Email:</label></td>
+                <td><InputText @bind-Value="registerUser.Email" type="email" class="form-control" /></td>
+            </tr>
+            <tr>
+                <td><label>Phone:</label></td>
+                <td><InputText @bind-Value="registerUser.Phone" class="form-control" /></td>
+            </tr>
+            <tr>
+                <td><label>Country:</label></td>
+                <td><InputText @bind-Value="registerUser.Country" class="form-control" /></td>
+            </tr>
+            <tr>
+                <td><label>Language:</label></td>
+                <td><InputText @bind-Value="registerUser.Language" class="form-control" /></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <button type="submit" class="btn btn-success">Register</button>
+</EditForm>
+
+
+@code {
+    private RegisterUserDto registerUser = new();
+    private bool showSuccessMessage = false;
+
+    private async Task HandleValidSubmit()
+    {
+        var response = await Http.PostAsJsonAsync("api/user/", registerUser);
+        if (response.IsSuccessStatusCode)
+        {
+            registerUser = new RegisterUserDto(); // Clear the form
+            showSuccessMessage = true;
+
+            // Wait 2 seconds before redirecting
+            await Task.Delay(2000);
+            NavigationManager.NavigateTo("/users");
+        }
+    }
+}

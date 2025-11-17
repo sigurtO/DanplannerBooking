@@ -16,17 +16,13 @@ namespace DanplannerBooking.Infrastructure.Context
 
         }
 
-
         public DbSet<User> Users { get; set; }
         public DbSet<Campsite> Campsites { get; set; }
         public DbSet<Space> Spaces { get; set; }
         public DbSet<Cottage> Cottages { get; set; }
-        public DbSet<Bundle> Bundles { get; set; }
+        //public DbSet<Bundle> Bundles { get; set; }
         public DbSet<AddOn> AddOns { get; set; }
         public DbSet<Booking> Bookings { get; set; }
-
-
-
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -77,13 +73,13 @@ namespace DanplannerBooking.Infrastructure.Context
             // ---- keep your existing relationships below ----
             modelBuilder.Entity<Campsite>()
                 .HasMany(c => c.Spaces)
-                .WithOne(s => s.Campsite)
+                .WithOne(s => s.Campsite) // for navigation property in Space
                 .HasForeignKey(s => s.CampsiteId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Campsite>()
                 .HasMany(c => c.Cottages)
-                .WithOne()
+                .WithOne(cs => cs.Campsite) // This is for the Navigation property in Cottage
                 .HasForeignKey(c => c.CampsiteId)
                 .OnDelete(DeleteBehavior.Cascade);
 
@@ -120,12 +116,8 @@ namespace DanplannerBooking.Infrastructure.Context
             modelBuilder.Entity<BookingAddOn>()
                 .HasKey(ba => new { ba.BookingId, ba.AddOnId });
 
-            modelBuilder.Entity<BundleAddOn>()
-                .HasKey(ba => new { ba.BundleId, ba.AddOnId });
+            //modelBuilder.Entity<BundleAddOn>()
+            //    .HasKey(ba => new { ba.BundleId, ba.AddOnId });
         }
-
-
-
-
     }
 }

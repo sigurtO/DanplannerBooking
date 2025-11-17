@@ -40,6 +40,12 @@ namespace DanplannerBooking.Application.Dtos.User
         public string Password { get; set; }
     }
 
+    public class RegisterUserDto : UpdateUserDto
+    {
+        [Required]
+        public string Password { get; set; }
+    }
+
     public record UserResponseDto(
     Guid Id,
     string Name,

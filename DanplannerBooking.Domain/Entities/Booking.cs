@@ -13,7 +13,7 @@ namespace DanplannerBooking.Domain.Entities
         public DateTime DateEnd { get; set; }
 
         public decimal TotalPrice { get; set; }
-        public decimal Discount { get; set; }
+        public decimal Discount { get; set; } //remove this????
 
         public Guid? CottageId { get; set; }
         public Cottage Cottage { get; set; }
@@ -21,8 +21,8 @@ namespace DanplannerBooking.Domain.Entities
         public Guid? SpaceId { get; set; }
         public Space Space { get; set; }
 
-        public Guid? BundleId { get; set; }
-        public Bundle Bundle { get; set; }
+        //public Guid? BundleId { get; set; }
+        //public Bundle Bundle { get; set; }
 
         public ICollection<BookingAddOn> BookingAddOns { get; set; }
     }

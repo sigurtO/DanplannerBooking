@@ -43,10 +43,10 @@ namespace DanplannerBooking.Infrastructure.Repository
         {
             return await _context.Users.FindAsync(id);
         }
-
+ 
         public async Task<bool> UpdateAsync(Guid id, User updatedUser)
         {
-            var existingUser = _context.Users.Find(id);
+            var existingUser = await _context.Users.FindAsync(id);
             if (existingUser == null) return false;
 
             existingUser.Name = updatedUser.Name;

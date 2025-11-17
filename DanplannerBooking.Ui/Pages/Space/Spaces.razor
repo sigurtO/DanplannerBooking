@@ -1,0 +1,74 @@
+﻿@page "/allSpaces"
+@using DanplannerBooking.Application.Dtos.Space
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h3>Available Spaces</h3>
+
+@if (spaces == null)
+{
+    <p>Loading spaces...</p>
+}
+else if (spaces.Count == 0)
+{
+    <p>No spaces found.</p>
+}
+else
+{
+    <div class="row">
+        @foreach (var space in spaces)
+        {
+            <div class="col-md-6 mb-4">
+                <div class="card shadow-sm">
+                    <div class="row g-0">
+                        <div class="col-md-4">
+                            @if (!string.IsNullOrWhiteSpace(space.ImageUrl))
+                            {
+                                <img src="@space.ImageUrl" class="img-fluid rounded-start" alt="Space image" />
+                            }
+                            else
+                            {
+                                <div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 100%; min-height: 150px;">
+                                    No Image
+                                </div>
+                            }
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title">@space.Name</h5>
+                                <p class="card-text">
+                                    <strong>Location:</strong> @space.Location<br />
+                                    <strong>Description:</strong> @space.Description<br />
+                                    <strong>Price:</strong> @space.PricePerNight.ToString("C")<br />
+                                    <strong>Availability:</strong> @(space.IsAvailable ? "✅ Available" : "❌ Unavailable")<br />
+                                    <strong>Electricity:</strong> @(space.HasElectricity ? "⚡ Yes" : "No")<br />
+                                    <strong>Distances:</strong><br />
+                                    🚽 @space.MetersFromToilet m<br />
+                                    @(space.MetersFromPool.HasValue ? $"🏊 {space.MetersFromPool} m" : "")
+                                    <br />
+                                    @(space.MetersFromPlayground.HasValue ? $"🛝 {space.MetersFromPlayground} m" : "")
+                                    <br />
+                                    @(space.MetersFromOcean.HasValue ? $"🌊 {space.MetersFromOcean} m" : "")
+                                </p>
+                                <button class="btn btn-primary" @onclick="() => NavigateToDetails(space.Id)">View Details</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<SpaceResponseDto> spaces;
+
+    protected override async Task OnInitializedAsync()
+    {
+        spaces = await Http.GetFromJsonAsync<List<SpaceResponseDto>>("api/space");
+    }
+    private void NavigateToDetails(Guid spaceId)
+    {
+        NavigationManager.NavigateTo($"/space/{spaceId}");
+    }
+}

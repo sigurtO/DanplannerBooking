@@ -44,7 +44,6 @@ namespace DanplannerBooking.Api.Controllers
         [HttpPost]
         public async Task<ActionResult> CreateUser([FromBody] CreateUserDto createUserDto)
         {
-            // Map CreateUserDto to User entity
             var user = new User
             {
                 Name = createUserDto.Name,
@@ -61,7 +60,7 @@ namespace DanplannerBooking.Api.Controllers
 
 
         //Put api/user/me
-        [HttpPut("me")] //Update user by id (non admin)
+        [HttpPut("me")] //Update user by id (non admin) //not used for edit profile
         [Authorize]
         public async Task<ActionResult> UpdateUser([FromBody] UpdateUserDto updateUserDto)
         {

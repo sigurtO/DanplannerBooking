@@ -19,10 +19,11 @@ namespace DanplannerBooking.Domain.Entities
         public bool HasOceanAccess { get; set; }
         public bool HasPool { get; set; }
         public bool HasPlayground { get; set; }
-        public bool HasCarCharger { get; set; }
+        public bool HasCarCharger { get; set; }//not used
 
         public ICollection<Space> Spaces { get; set; } // one to many relationship
         public ICollection<Cottage> Cottages { get; set; } // one to many relationship
+        //may need to add Bundle here depends on how we implement it
     }
 
 

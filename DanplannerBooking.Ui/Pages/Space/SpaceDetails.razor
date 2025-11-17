@@ -1,0 +1,55 @@
+﻿@page "/space/{spaceId:guid}"
+@using DanplannerBooking.Application.Dtos.Space
+@inject HttpClient Http
+
+<h3>Space Details</h3>
+
+@if (space == null)
+{
+    <p>Loading space...</p>
+}
+else
+{
+    <div class="card mb-4 shadow-sm">
+        <div class="row g-0">
+            <div class="col-md-5">
+                @if (!string.IsNullOrWhiteSpace(space.ImageUrl))
+                {
+                    <img src="@space.ImageUrl" class="img-fluid rounded-start" alt="Space image" />
+                }
+            </div>
+            <div class="col-md-7">
+                <div class="card-body">
+                    <h4 class="card-title"> @space.Name</h4>
+                    <p class="card-text">
+                        <strong>Location:</strong> @space.Location<br />
+                        <strong>Description:</strong> @space.Description<br />
+                        <strong>Price:</strong> @space.PricePerNight.ToString("C")<br />
+                        <strong>Status:</strong> @(space.IsAvailable ? "✅ Available" : "❌ Unavailable")<br />
+                        <strong>Electricity:</strong> @(space.HasElectricity ? "⚡ Yes" : "No")<br />
+                        <strong>Distances:</strong><br />
+                        🚽 @space.MetersFromToilet m
+                        <br />
+                        @(space.MetersFromPool.HasValue ? $"🏊 {space.MetersFromPool} m" : "")
+                        <br />
+                        @(space.MetersFromPlayground.HasValue ? $"🛝 {space.MetersFromPlayground} m" : "")
+                        <br />
+                        @(space.MetersFromOcean.HasValue ? $"🌊 {space.MetersFromOcean} m" : "")
+                    </p>
+                    <button class="btn btn-success">Book Now</button>
+                    <p class="mt-2 text-muted">Free cancellation up to 48 hours before check-in</p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid spaceId { get; set; }
+    private SpaceResponseDto? space;
+
+    protected override async Task OnInitializedAsync()
+    {
+        space = await Http.GetFromJsonAsync<SpaceResponseDto>($"api/space/{spaceId}");
+    }
+}
