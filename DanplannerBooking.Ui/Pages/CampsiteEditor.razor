@@ -31,14 +31,13 @@
 
         @if (SelectedCampsite is not null)
         {
-            <div class="card mt-2 p-2" style="max-width:420px">
-                <div style="display:flex; gap:12px;">
-                    <img src="@BgImageUrl" alt="plads" style="width:140px;height:90px;object-fit:cover;border-radius:6px;border:1px solid #ddd;" />
+            <div class="mt-2 card" style="padding:8px;">
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <div style="width:72px; height:48px; overflow:hidden; border-radius:6px; border:1px solid #ddd;">
+                        <img src="@BgImageUrl" alt="Campsite preview" style="width:100%; height:100%; object-fit:cover;" />
+                    </div>
                     <div>
-                        <div class="fw-bold">@SelectedCampsite.Name</div>
-                        <div class="text-muted" style="font-size:.9rem;">
-                            Hytter: @Units.Count(u => u.ProductType == "Hytte") • Pladser: @Units.Count(u => u.ProductType == "Plads")
-                        </div>
+                        <div><strong>@SelectedCampsite.Name</strong></div>
                         <div class="text-muted" style="font-size:.85rem;">Billedsti: <code>@BgImageUrl</code></div>
                     </div>
                 </div>
@@ -54,6 +53,9 @@
 <div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap">
     <div class="card" style="min-width:280px; max-width:360px; padding:12px;">
         <h3>Værktøjer</h3>
+        <p class="text-muted" style="font-size:.9rem;">
+            Tilføj nye enheder (kun i UI), eller placer eksisterende DB-enheder på kortet.
+        </p>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
             <button class="btn btn-primary" @onclick="AddTent" disabled="@DisabledNoCampsite">+ Teltplads</button>
@@ -79,6 +81,26 @@
                 <button class="btn btn-outline-secondary" @onclick="ApplyManualPosition">↻ Opdater</button>
                 <button class="btn btn-outline-danger" @onclick="DeleteSelected">🗑️ Slet</button>
             </div>
+
+            @if (SelectedBookings is not null && SelectedBookings.Count > 0)
+            {
+                <div class="mt-3">
+                    <h5>Bookinger</h5>
+                    <ul class="list-unstyled">
+                        @foreach (var b in SelectedBookings)
+                        {
+                            <li class="mb-1">
+                                <strong>@b.DateStart.ToString("dd-MM-yyyy") - @b.DateEnd.ToString("dd-MM-yyyy")</strong><br />
+                                @b.UserName (@b.NumberOfPeople personer) – @b.TotalPrice.ToString("C")
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+            else
+            {
+                <p class="mt-2 text-muted">Ingen bookinger for denne enhed.</p>
+            }
         }
 
         <hr />
@@ -117,13 +139,17 @@
 
         @if (!string.IsNullOrEmpty(StatusMessage))
         {
-            <div class="alert mt-2 py-2" style="border-radius:8px; font-size:.95rem; @(StatusKind switch { "success" => "background:#e6ffed;border:1px solid #b7f5c6;color:#055b27;", "danger" => "background:#ffecec;border:1px solid #f5b7b7;color:#7a1111;", "warning" => "background:#fff8e6;border:1px solid #f5e0b7;color:#7a5b05;", _ => "background:#eef4ff;border:1px solid #c8d9ff;color:#0b3d91;" })">
+            <div class="alert mt-2 py-2" style="border-radius:6px; font-size:0.9rem;
+                 @(StatusKind == "success" ? "background:#e6ffed;border:1px solid #a3e6b1;color:#116130;" :
+                   StatusKind == "danger"  ? "background:#ffe6e6;border:1px solid #f5a3a3;color:#7f1111;" :
+                   StatusKind == "warning" ? "background:#fff8e6;border:1px solid #f2d38b;color:#7a5b00;" :
+                                              "background:#eef4ff;border:1px solid #c8d9ff;color:#0b3d91;" )">
                 @StatusMessage
             </div>
         }
     </div>
 
-    <div id="mapContainer" style="flex:1 1 820px; min-width:760px; height:75vh; border:1px solid #ccc; border-radius:10px; overflow:hidden;">
+    <div id="mapContainer" style="flex:1 1 820px; min-width:760px; height:560px; border:1px solid #ccc; border-radius:10px; overflow:hidden;">
         <svg id="campsiteSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1336 768" style="width:100%; height:100%;">
             <image href="@BgImageUrl" x="0" y="0" width="1336" height="768" />
             @foreach (var u in Units)
@@ -133,7 +159,7 @@
                 <g class="unit @(u.ProductType == "Hytte" ? "hut" : "tent")"
                    data-id="@u.Id"
                    transform="translate(@u.X,@u.Y)"
-                   @onclick="() => _selectedId = u.Id">
+                   @onclick="() => OnUnitClicked(u)">
                     @if (u.ProductType == "Hytte")
                     {
                         <rect x="-16" y="-12" rx="5" ry="5" width="32" height="24" style="fill:rgba(0,0,255,.55); @border"></rect>
@@ -147,9 +173,9 @@
                         @u.Name @if(!u.FromDb){
                         <tspan fill="#ffd54f"> (ny)</tspan>
                     }
-                </text>
-            </g>
-                        }
+                    </text>
+                </g>
+            }
         </svg>
     </div>
 </div>
@@ -189,6 +215,19 @@
     private string? _selectedId;
     private EditableUnit? Selected => Units.FirstOrDefault(z => z.Id == _selectedId);
 
+    // ---------- Bookings for selected unit ----------
+    private sealed class BookingSummary
+    {
+        public Guid Id { get; set; }
+        public DateTime DateStart { get; set; }
+        public DateTime DateEnd { get; set; }
+        public string UserName { get; set; } = "";
+        public int NumberOfPeople { get; set; }
+        public decimal TotalPrice { get; set; }
+    }
+
+    private List<BookingSummary> SelectedBookings { get; set; } = new();
+
     // ---------- Options ----------
     private sealed class UnitOption
     {
@@ -213,8 +252,20 @@
 
     private async Task LoadCampsites()
     {
-        try { Campsites = (await Http.GetFromJsonAsync<List<UiCampsite>>("api/campsites"))?.ToList() ?? new(); }
-        catch { Campsites = new(); }
+        try
+        {
+            var data = await Http.GetFromJsonAsync<List<CampsiteDto>>("api/campsites") ?? new();
+            Campsites = data.Select(c => new UiCampsite
+            {
+                Id = c.Id.ToString(),
+                Name = c.Name,
+                ImageUrl = string.IsNullOrWhiteSpace(c.ImageUrl) ? "images/campsite.jpg" : c.ImageUrl
+            }).ToList();
+        }
+        catch
+        {
+            Campsites = new();
+        }
 
         if (string.IsNullOrEmpty(SelectedCampsiteId) && Campsites.Count > 0)
             SelectedCampsiteId = Campsites[0].Id;
@@ -233,6 +284,48 @@
         }
         await LoadFromApi();
         await LoadOptions();
+    }
+
+    private async Task OnUnitClicked(EditableUnit u)
+    {
+        _selectedId = u.Id;
+        SelectedBookings = new List<BookingSummary>();
+
+        // hvis enheden ikke er fra DB endnu, giver det ingen mening at hente bookinger
+        if (!u.FromDb)
+        {
+            StatusKind = "info";
+            StatusMessage = "Enheden er ikke oprettet i databasen endnu, så der findes ingen bookinger.";
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            var type = u.ProductType == "Hytte" ? "Cottage" : "Space";
+            var url = $"api/booking/by-unit/{u.Id}?type={type}";
+
+            var data = await Http.GetFromJsonAsync<List<BookingSummary>>(url) ?? new();
+            SelectedBookings = data;
+
+            if (SelectedBookings.Count == 0)
+            {
+                StatusKind = "info";
+                StatusMessage = "Ingen bookinger fundet for denne enhed.";
+            }
+            else
+            {
+                StatusKind = "info";
+                StatusMessage = $"Indlæst {SelectedBookings.Count} bookinger for enheden.";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusKind = "danger";
+            StatusMessage = "Kunne ikke hente bookinger: " + ex.Message;
+        }
+
+        StateHasChanged();
     }
 
     [JSInvokable]
@@ -260,6 +353,7 @@
         if (_selectedId is null) return;
         Units = Units.Where(u => u.Id != _selectedId).ToList();
         _selectedId = null;
+        SelectedBookings.Clear();
     }
 
     private void ApplyManualPosition() => StateHasChanged();
@@ -285,14 +379,14 @@
 
         var content = new StringContent(payload, System.Text.Encoding.UTF8, "application/json");
 
-        // ✅ pass campsiteId so backend attaches to the same campsite you’ve selected
+        // pass campsiteId so backend attaches to the same campsite you’ve selected
         var url = $"api/units/layout/import?campsiteId={SelectedCampsiteId}";
         var resp = await Http.PostAsync(url, content);
 
         if (resp.IsSuccessStatusCode)
         {
             StatusKind = "success";
-            StatusMessage = "Layout importeret. Henter fra API…";
+            StatusMessage = "Import lykkedes. Opdaterer…";
             await RefreshForCampsite();
         }
         else
@@ -303,9 +397,107 @@
         StateHasChanged();
     }
 
+    private async Task CreateNewInDb()
+    {
+        var newOnes = Units.Where(u => !u.FromDb).ToList();
+        if (newOnes.Count == 0)
+        {
+            StatusKind = "warning";
+            StatusMessage = "Ingen nye enheder at oprette.";
+            StateHasChanged();
+            return;
+        }
+
+        var body = new
+        {
+            createMissing = true,
+            units = newOnes.Select(u => new
+            {
+                id = (Guid?)null,
+                type = u.ProductType == "Hytte" ? "Cottage" : "Space",
+                name = u.Name,
+                x = u.X,
+                y = u.Y
+            })
+        };
+
+        try
+        {
+            var resp = await Http.PostAsJsonAsync("api/units/layout/import?campsiteId=" + SelectedCampsiteId, body);
+            if (resp.IsSuccessStatusCode)
+            {
+                StatusKind = "success";
+                StatusMessage = "Oprettede nye enheder. Opdaterer…";
+                await RefreshForCampsite();
+            }
+            else
+            {
+                StatusKind = "danger";
+                StatusMessage = "Opret fejlede: " + await resp.Content.ReadAsStringAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusKind = "danger";
+            StatusMessage = "Fejl under oprettelse: " + ex.Message;
+        }
+        StateHasChanged();
+    }
+
+    private async Task SaveLayout()
+    {
+        if (Units.Count == 0)
+        {
+            StatusKind = "warning";
+            StatusMessage = "Ingen enheder at gemme layout for.";
+            StateHasChanged();
+            return;
+        }
+
+        var payload = Units
+            .Where(u => u.FromDb)
+            .Select(u => new UnitLayoutDto
+            {
+                Id = Guid.Parse(u.Id),
+                Type = u.ProductType == "Hytte" ? "Cottage" : "Space",
+                X = u.X,
+                Y = u.Y
+            }).Where(x => x.Id != Guid.Empty).ToList();
+
+        try
+        {
+            var url = $"api/units/layout?campsiteId={SelectedCampsiteId}";
+            var resp = await Http.PutAsJsonAsync(url, payload);
+
+            if (resp.IsSuccessStatusCode)
+            {
+                StatusKind = "success";
+                StatusMessage = $"Layout gemt ({payload.Count} enheder).";
+                await RefreshForCampsite();
+            }
+            else
+            {
+                StatusKind = "danger";
+                StatusMessage = "Gem fejlede: " + await resp.Content.ReadAsStringAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusKind = "danger";
+            StatusMessage = "Gem fejlede: " + ex.Message;
+        }
+        StateHasChanged();
+    }
 
     private async Task LoadFromApi()
     {
+        if (string.IsNullOrEmpty(SelectedCampsiteId))
+        {
+            Units.Clear();
+            StateHasChanged();
+            return;
+        }
+
         try
         {
             var url = $"api/units?campsiteId={SelectedCampsiteId}";
@@ -332,100 +524,6 @@
         StateHasChanged();
     }
 
-    private async Task CreateNewInDb()
-    {
-        var newOnes = Units.Where(u => !u.FromDb).ToList();
-        if (newOnes.Count == 0)
-        {
-            StatusKind = "warning";
-            StatusMessage = "Ingen nye enheder at oprette.";
-            StateHasChanged();
-            return;
-        }
-
-        var body = new
-        {
-            createMissing = true,
-            units = newOnes.Select(u => new
-            {
-                id = (Guid?)null,
-                name = u.Name,
-                type = u.ProductType == "Hytte" ? "Cottage" : "Space",
-                x = u.X,
-                y = u.Y
-            }).ToList()
-        };
-
-        try
-        {
-            // ✅ attach to the selected campsite
-            var url = $"api/units/layout/import?campsiteId={SelectedCampsiteId}";
-            var resp = await Http.PostAsJsonAsync(url, body);
-            if (resp.IsSuccessStatusCode)
-            {
-                StatusKind = "success";
-                StatusMessage = $"Oprettede {newOnes.Count} nye enheder i DB. Henter fra API…";
-                await RefreshForCampsite();
-            }
-            else
-            {
-                StatusKind = "danger";
-                StatusMessage = "Opret fejlede: " + await resp.Content.ReadAsStringAsync();
-            }
-        }
-        catch (Exception ex)
-        {
-            StatusKind = "danger";
-            StatusMessage = "Opret fejlede: " + ex.Message;
-        }
-        StateHasChanged();
-    }
-
-
-    private async Task SaveLayout()
-    {
-        try
-        {
-            var toSave = Units.Where(u => u.FromDb).ToList();
-            if (toSave.Count == 0)
-            {
-                StatusKind = "warning";
-                StatusMessage = "Ingen eksisterende DB-enheder at gemme.";
-                StateHasChanged();
-                return;
-            }
-
-            var payload = toSave.Select(u => new
-            {
-                id = Guid.TryParse(u.Id, out var gid) ? gid : Guid.Empty,
-                type = u.ProductType == "Hytte" ? "Cottage" : "Space",
-                x = u.X,
-                y = u.Y
-            }).Where(x => x.id != Guid.Empty).ToList();
-
-            var url = $"api/units/layout?campsiteId={SelectedCampsiteId}";
-            var resp = await Http.PutAsJsonAsync(url, payload);
-
-            if (resp.IsSuccessStatusCode)
-            {
-                StatusKind = "success";
-                StatusMessage = $"Layout gemt ({payload.Count} enheder).";
-                await RefreshForCampsite();
-            }
-            else
-            {
-                StatusKind = "danger";
-                StatusMessage = "Gem fejlede: " + await resp.Content.ReadAsStringAsync();
-            }
-        }
-        catch (Exception ex)
-        {
-            StatusKind = "danger";
-            StatusMessage = "Gem fejlede: " + ex.Message;
-        }
-        StateHasChanged();
-    }
-
     private async Task LoadOptions()
     {
         if (string.IsNullOrEmpty(SelectedCampsiteId)) { Options.Clear(); return; }
@@ -438,35 +536,25 @@
     private async Task StartPlaceOnMap()
     {
         if (string.IsNullOrEmpty(SelectedOptionId)) return;
-        StatusKind = "info";
-        StatusMessage = "Klik på kortet for at vælge position…";
-        StateHasChanged();
+        var opt = Options.FirstOrDefault(o => o.Id == SelectedOptionId);
+        if (opt is null) return;
 
-        Console.WriteLine("Arm pickPoint");
-        await JS.InvokeVoidAsync("CampsiteMap.pickPoint", "#campsiteSvg",
-          DotNetObjectReference.Create(this), nameof(OnPickPoint));
-    }
-
-    [JSInvokable]
-    public async Task OnPickPoint(int x, int y)
-    {
         try
         {
-            if (Guid.TryParse(SelectedOptionId, out var id) && id != Guid.Empty)
+            var newUnit = new EditableUnit
             {
-                var resp = await Http.PutAsJsonAsync($"api/units/{id}/position", new { x, y });
-                if (resp.IsSuccessStatusCode)
-                {
-                    StatusKind = "success";
-                    StatusMessage = $"Placeret ved ({x},{y}). Opdaterer…";
-                    await RefreshForCampsite();
-                }
-                else
-                {
-                    StatusKind = "danger";
-                    StatusMessage = "Placering fejlede: " + await resp.Content.ReadAsStringAsync();
-                }
-            }
+                Id = opt.Id,
+                Name = opt.Name,
+                ProductType = opt.Type == "Cottage" ? "Hytte" : "Plads",
+                X = 400,
+                Y = 300,
+                FromDb = true
+            };
+
+            Units.Add(newUnit);
+            _selectedId = newUnit.Id;
+            StatusKind = "info";
+            StatusMessage = $"Klar til at placere: {newUnit.Name}. Træk markøren på kortet og gem layout.";
         }
         catch (Exception ex)
         {

@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DanplannerBooking.Infrastructure.Migrations
 {
     [DbContext(typeof(DbContextBooking))]
-    [Migration("20251112101244_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20251117103850_SyncAfterMerge")]
+    partial class SyncAfterMerge
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -35,12 +35,17 @@ namespace DanplannerBooking.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,2)");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
 
                     b.Property<int>("Type")
                         .HasColumnType("int");
@@ -66,7 +71,9 @@ namespace DanplannerBooking.Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<decimal>("Discount")
-                        .HasColumnType("decimal(18,2)");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
 
                     b.Property<int>("NumberOfPeople")
                         .HasColumnType("int");
@@ -75,7 +82,9 @@ namespace DanplannerBooking.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("TotalPrice")
-                        .HasColumnType("decimal(18,2)");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
@@ -91,6 +100,45 @@ namespace DanplannerBooking.Infrastructure.Migrations
                     b.ToTable("Bookings");
                 });
 
+            modelBuilder.Entity("DanplannerBooking.Domain.Entities.Bundle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("BasePrice")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<Guid?>("CottageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Discount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("SpaceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CottageId");
+
+                    b.HasIndex("SpaceId");
+
+                    b.ToTable("Bundle");
+                });
+
             modelBuilder.Entity("DanplannerBooking.Domain.Entities.Campsite", b =>
                 {
                     b.Property<Guid>("Id")
@@ -99,7 +147,9 @@ namespace DanplannerBooking.Infrastructure.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("");
 
                     b.Property<bool>("HasCarCharger")
                         .HasColumnType("bit");
@@ -113,9 +163,15 @@ namespace DanplannerBooking.Infrastructure.Migrations
                     b.Property<bool>("HasPool")
                         .HasColumnType("bit");
 
-                    b.Property<string>("Location")
+                    b.Property<string>("ImageUrl")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("N/A");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -137,7 +193,9 @@ namespace DanplannerBooking.Infrastructure.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("");
 
                     b.Property<bool>("HasHeating")
                         .HasColumnType("bit");
@@ -156,21 +214,37 @@ namespace DanplannerBooking.Infrastructure.Migrations
 
                     b.Property<string>("ImageUrl")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("");
 
                     b.Property<bool>("IsAvailable")
                         .HasColumnType("bit");
 
                     b.Property<string>("Location")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("N/A");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("PricePerNight")
-                        .HasColumnType("decimal(18,2)");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<int>("X")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("Y")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.HasKey("Id");
 
@@ -194,6 +268,21 @@ namespace DanplannerBooking.Infrastructure.Migrations
                     b.ToTable("BookingAddOn");
                 });
 
+            modelBuilder.Entity("DanplannerBooking.Domain.Entities.JoinTable.BundleAddOn", b =>
+                {
+                    b.Property<Guid>("BundleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AddOnId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("BundleId", "AddOnId");
+
+                    b.HasIndex("AddOnId");
+
+                    b.ToTable("BundleAddOn");
+                });
+
             modelBuilder.Entity("DanplannerBooking.Domain.Entities.Space", b =>
                 {
                     b.Property<Guid>("Id")
@@ -204,7 +293,6 @@ namespace DanplannerBooking.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("HasElectricity")
@@ -212,13 +300,14 @@ namespace DanplannerBooking.Infrastructure.Migrations
 
                     b.Property<string>("ImageUrl")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("");
 
                     b.Property<bool>("IsAvailable")
                         .HasColumnType("bit");
 
                     b.Property<string>("Location")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("MetersFromOcean")
@@ -238,7 +327,19 @@ namespace DanplannerBooking.Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("PricePerNight")
-                        .HasColumnType("decimal(18,2)");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<int>("X")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("Y")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.HasKey("Id");
 
@@ -308,6 +409,21 @@ namespace DanplannerBooking.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("DanplannerBooking.Domain.Entities.Bundle", b =>
+                {
+                    b.HasOne("DanplannerBooking.Domain.Entities.Cottage", "Cottage")
+                        .WithMany()
+                        .HasForeignKey("CottageId");
+
+                    b.HasOne("DanplannerBooking.Domain.Entities.Space", "Space")
+                        .WithMany()
+                        .HasForeignKey("SpaceId");
+
+                    b.Navigation("Cottage");
+
+                    b.Navigation("Space");
+                });
+
             modelBuilder.Entity("DanplannerBooking.Domain.Entities.Cottage", b =>
                 {
                     b.HasOne("DanplannerBooking.Domain.Entities.Campsite", "Campsite")
@@ -338,6 +454,25 @@ namespace DanplannerBooking.Infrastructure.Migrations
                     b.Navigation("Booking");
                 });
 
+            modelBuilder.Entity("DanplannerBooking.Domain.Entities.JoinTable.BundleAddOn", b =>
+                {
+                    b.HasOne("DanplannerBooking.Domain.Entities.AddOn", "AddOn")
+                        .WithMany("BundleAddOns")
+                        .HasForeignKey("AddOnId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DanplannerBooking.Domain.Entities.Bundle", "Bundle")
+                        .WithMany("BundleAddOns")
+                        .HasForeignKey("BundleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AddOn");
+
+                    b.Navigation("Bundle");
+                });
+
             modelBuilder.Entity("DanplannerBooking.Domain.Entities.Space", b =>
                 {
                     b.HasOne("DanplannerBooking.Domain.Entities.Campsite", "Campsite")
@@ -352,11 +487,18 @@ namespace DanplannerBooking.Infrastructure.Migrations
             modelBuilder.Entity("DanplannerBooking.Domain.Entities.AddOn", b =>
                 {
                     b.Navigation("BookingAddOns");
+
+                    b.Navigation("BundleAddOns");
                 });
 
             modelBuilder.Entity("DanplannerBooking.Domain.Entities.Booking", b =>
                 {
                     b.Navigation("BookingAddOns");
+                });
+
+            modelBuilder.Entity("DanplannerBooking.Domain.Entities.Bundle", b =>
+                {
+                    b.Navigation("BundleAddOns");
                 });
 
             modelBuilder.Entity("DanplannerBooking.Domain.Entities.Campsite", b =>
