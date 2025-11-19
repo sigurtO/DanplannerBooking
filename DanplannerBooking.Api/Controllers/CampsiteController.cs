@@ -1,23 +1,140 @@
-// DanplannerBooking.Api/Controllers/CampsitesController.cs
 using DanplannerBooking.Application.Dtos;
-using DanplannerBooking.Infrastructure.Context;
+using DanplannerBooking.Application.Dtos.Campsite;
+using DanplannerBooking.Application.Interfaces;
+using DanplannerBooking.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace DanplannerBooking.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class CampsitesController : ControllerBase
+public class CampsiteController : ControllerBase
 {
-    private readonly DbContextBooking _db;
-    public CampsitesController(DbContextBooking db) => _db = db;
+    private readonly ICampsiteRepository _campsiteRepository;
 
-    // GET api/campsites
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<CampsiteDto>>> Get(CancellationToken ct)
+    public CampsiteController(ICampsiteRepository campsiteRepository)
     {
-        var items = await _db.Campsites.AsNoTracking()
+        _campsiteRepository = campsiteRepository;
+    }
+
+    // ---------------------------
+    // Fuld CRUD til /api/campsite
+    // ---------------------------
+
+    // GET: api/campsite
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<CampsiteResponseDto>>> GetAll()
+    {
+        var campsites = await _campsiteRepository.GetAllAsync();
+
+        var result = campsites
+            .Select(c => new CampsiteResponseDto(
+                c.Id,
+                c.Name,
+                c.Location,
+                c.Description,
+                c.HasOceanAccess,
+                c.HasPool,
+                c.HasPlayground,
+                c.HasCarCharger
+            ))
+            .ToList();
+
+        return Ok(result);
+    }
+
+    // GET: api/campsite/{id}
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<CampsiteResponseDto>> GetById(Guid id)
+    {
+        var campsite = await _campsiteRepository.GetByIdAsync(id);
+        if (campsite is null)
+            return NotFound();
+
+        var dto = new CampsiteResponseDto(
+            campsite.Id,
+            campsite.Name,
+            campsite.Location,
+            campsite.Description,
+            campsite.HasOceanAccess,
+            campsite.HasPool,
+            campsite.HasPlayground,
+            campsite.HasCarCharger
+        );
+
+        return Ok(dto);
+    }
+
+    // POST: api/campsite
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] CreateCampsiteDto dto)
+    {
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
+        var entity = new Campsite
+        {
+            Id = Guid.NewGuid(),
+            Name = dto.Name,
+            Location = dto.Location,
+            Description = dto.Description,
+            // ImageUrl kan sættes et andet sted – vi lader den stå til default
+            HasOceanAccess = dto.HasOceanAccess,
+            HasPool = dto.HasPool,
+            HasPlayground = dto.HasPlayground,
+            HasCarCharger = dto.HasCarCharger
+        };
+
+        await _campsiteRepository.CreateAsync(entity);
+
+        return CreatedAtAction(nameof(GetById), new { id = entity.Id }, null);
+    }
+
+    // PUT: api/campsite/{id}
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] CreateCampsiteDto dto)
+    {
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
+        var updated = new Campsite
+        {
+            Name = dto.Name,
+            Location = dto.Location,
+            Description = dto.Description,
+            HasOceanAccess = dto.HasOceanAccess,
+            HasPool = dto.HasPool,
+            HasPlayground = dto.HasPlayground,
+            HasCarCharger = dto.HasCarCharger
+        };
+
+        var success = await _campsiteRepository.UpdateAsync(id, updated);
+        if (!success)
+            return NotFound();
+
+        return NoContent();
+    }
+
+    // DELETE: api/campsite/{id}
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var success = await _campsiteRepository.DeleteAsync(id);
+        if (!success)
+            return NotFound();
+
+        return NoContent();
+    }
+
+    // ---------------------------------------------
+    // Simpel liste til kort/editor: GET /api/campsites
+    // ---------------------------------------------
+    [HttpGet("/api/campsites")]
+    public async Task<ActionResult<IEnumerable<CampsiteDto>>> GetForMap()
+    {
+        var campsites = await _campsiteRepository.GetAllAsync();
+
+        var items = campsites
             .Select(c => new CampsiteDto
             {
                 Id = c.Id,
@@ -27,7 +144,7 @@ public class CampsitesController : ControllerBase
                     : c.ImageUrl
             })
             .OrderBy(c => c.Name)
-            .ToListAsync(ct);
+            .ToList();
 
         return Ok(items);
     }

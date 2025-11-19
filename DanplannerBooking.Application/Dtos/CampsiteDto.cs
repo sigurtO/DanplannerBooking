@@ -1,15 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DanplannerBooking.Application.Dtos
 {
+    // Simpel DTO til kort/editor: Id, navn og billede
     public sealed class CampsiteDto
     {
         public Guid Id { get; set; }
-        public string Name { get; set; } = "";
-        public string ImageUrl { get; set; } = "";   // fx "images/hvidbjerg.jpg"
+        public string Name { get; set; } = string.Empty;
+        public string ImageUrl { get; set; } = string.Empty;   // fx "images/hvidbjerg.jpg"
     }
 }

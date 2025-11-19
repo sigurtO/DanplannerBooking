@@ -1,32 +1,48 @@
 ﻿using DanplannerBooking.Application.Dtos.Campsite;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations;
 
 namespace DanplannerBooking.Application.Dtos.Space
 {
     public class CreateSpaceDto
     {
+        [Required]
         public Guid CampsiteId { get; set; }
         public CampsiteResponseDto? Campsite { get; set; }
 
-        public string Name { get; set; } // new
-        public string Location { get; set; } // new
-        public string Description { get; set; } // new
+        [Required]
+        [StringLength(100)]
+        public string Name { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(200)]
+        public string Location { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(1000)]
+        public string Description { get; set; } = string.Empty;
 
         public bool HasElectricity { get; set; }
+
+        [Range(0, 10000)]
         public int MetersFromToilet { get; set; }
 
         // Optional distances based on campsite features
+        [Range(0, 10000)]
         public int? MetersFromPool { get; set; }
+
+        [Range(0, 10000)]
         public int? MetersFromPlayground { get; set; }
+
+        [Range(0, 10000)]
         public int? MetersFromOcean { get; set; }
 
-        public bool IsAvailable { get; set; }
+        public bool IsAvailable { get; set; } = true;
+
+        [Range(1, 100000, ErrorMessage = "Price per night must be greater than 0.")]
         public decimal PricePerNight { get; set; }
-        public string ImageUrl { get; set; }
+
+        public string ImageUrl { get; set; } = string.Empty;
     }
 
     public record SpaceResponseDto(

@@ -1,29 +1,30 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations;
 
 namespace DanplannerBooking.Application.Dtos.Campsite
 {
-    public class CampsiteDto
-    {
-
-    }
-
+    // Bruges til at oprette/ændre en campsite (Create + Update)
     public class CreateCampsiteDto
     {
-        public string Name { get; set; }
-        public string Location { get; set; }
-        public string Description { get; set; }
+        [Required]
+        [StringLength(100)]
+        public string Name { get; set; } = string.Empty;
 
-        // Shared features
+        [Required]
+        [StringLength(200)]
+        public string Location { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(1000)]
+        public string Description { get; set; } = string.Empty;
+
         public bool HasOceanAccess { get; set; }
         public bool HasPool { get; set; }
         public bool HasPlayground { get; set; }
         public bool HasCarCharger { get; set; }
     }
 
+    // Bruges til detaljer/oversigts-sider (CreateCottage, CreateSpace, /campsites)
     public record CampsiteResponseDto(
         Guid Id,
         string Name,

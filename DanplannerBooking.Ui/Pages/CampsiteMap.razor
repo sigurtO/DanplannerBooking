@@ -4,6 +4,7 @@
 @inject HttpClient Http
 @using System.Net.Http.Json
 @using DanplannerBooking.Application.Dtos
+
 <h2>🏕️ Pladskort</h2>
 <p class="text-muted">Vælg campingplads og se kortet med hytter og teltpladser.</p>
 
@@ -36,13 +37,8 @@
                 <div>
                     <h5 class="mb-1">@SelectedCampsite.Name</h5>
                     <p class="mb-0 text-muted" style="font-size:.9rem;">
-                        Kort med hytter (🏠) og teltpladser (⛺). Klik på et ikon for at se detaljer og bookinger.
+                        Klik på en ikon for at se detaljer og bookinger for en hytte eller plads.
                     </p>
-                    <div class="mt-2" style="font-size:.85rem;">
-                        <span class="badge bg-secondary me-1">Pan</span>
-                        <span class="badge bg-secondary me-1">Zoom</span>
-                        <span class="badge bg-secondary">Reset</span>
-                    </div>
                 </div>
             </div>
         </div>
@@ -69,7 +65,8 @@
 
                     if (u.Type == "Cottage")
                     {
-                        <g class="unit hut" data-id="@u.Id" transform="translate(@u.X,@u.Y)" @onclick="async () => await Select(u)">
+                        <g class="unit hut" data-id="@u.Id" transform="translate(@u.X,@u.Y)"
+                           @onclick="async () => await Select(u)">
                             <rect x="-16" y="-12" rx="5" ry="5" width="32" height="24" style="fill:rgba(130,76,14,.75); @stroke"></rect>
                             <path d="M-18 -12 L0 -26 L18 -12" style="fill:#6b3d0b; opacity:.9"></path>
                             <text y="-20" text-anchor="middle" fill="white" font-size="12">@u.Name</text>
@@ -77,7 +74,8 @@
                     }
                     else
                     {
-                        <g class="unit tent" data-id="@u.Id" transform="translate(@u.X,@u.Y)" @onclick="async () => await Select(u)">
+                        <g class="unit tent" data-id="@u.Id" transform="translate(@u.X,@u.Y)"
+                           @onclick="async () => await Select(u)">
                             <circle r="12" style="fill:rgba(0,160,70,.75); @stroke"></circle>
                             <text y="-20" text-anchor="middle" fill="white" font-size="12">@u.Name</text>
                         </g>
@@ -92,29 +90,89 @@
                         <strong>@Selected.Name</strong>
                         <button class="x" @onclick="Clear">✕</button>
                     </div>
+
                     <div class="body">
                         <div><span class="label">Type:</span> @(Selected.Type == "Cottage" ? "Hytte" : "Plads")</div>
                         <div><span class="label">Position:</span> X=@Selected.X, Y=@Selected.Y</div>
 
+                        @* Ekstra info om hytte eller plads *@
+                        @if (Selected.Type == "Cottage" && SelectedCottageDetails is not null)
+                        {
+                            <div class="mt-2">
+                                <div><span class="label">Lokation:</span> @SelectedCottageDetails.Location</div>
+                                <div><span class="label">Beskrivelse:</span> @SelectedCottageDetails.Description</div>
+                                <div class="mt-1">
+                                    <span class="label">Faciliteter:</span>
+                                    @{
+                                        var features = new List<string>();
+                                        if (SelectedCottageDetails.HasToilet) features.Add("Toilet");
+                                        if (SelectedCottageDetails.HasShower) features.Add("Bad");
+                                        if (SelectedCottageDetails.HasKitchen) features.Add("Køkken");
+                                        if (SelectedCottageDetails.HasHeating) features.Add("Varme");
+                                        if (SelectedCottageDetails.HasWiFi) features.Add("WiFi");
+                                    }
+                                    @(features.Count == 0 ? "Ingen særlige" : string.Join(", ", features))
+                                </div>
+                                <div class="mt-1">
+                                    <span class="label">Pris pr. nat:</span>
+                                    @SelectedCottageDetails.PricePerNight.ToString("C")
+                                </div>
+                                <div>
+                                    <span class="label">Status:</span>
+                                    @(SelectedCottageDetails.IsAvailable ? "Ledig" : "Optaget / ikke tilgængelig")
+                                </div>
+                            </div>
+                        }
+                        else if (Selected.Type == "Space" && SelectedSpaceDetails is not null)
+                        {
+                            <div class="mt-2">
+                                <div><span class="label">Lokation:</span> @SelectedSpaceDetails.Location</div>
+                                <div><span class="label">Beskrivelse:</span> @SelectedSpaceDetails.Description</div>
+                                <div class="mt-1">
+                                    <span class="label">El:</span>
+                                    @(SelectedSpaceDetails.HasElectricity ? "Ja" : "Nej")
+                                </div>
+                                <div class="mt-1">
+                                    <span class="label">Afstande:</span>
+                                    Toilet: @SelectedSpaceDetails.MetersFromToilet m
+                                    @if (SelectedSpaceDetails.MetersFromPool is not null)
+                                    {
+                                        <span>, Pool: @SelectedSpaceDetails.MetersFromPool m</span>
+                                    }
+                                    @if (SelectedSpaceDetails.MetersFromPlayground is not null)
+                                    {
+                                        <span>, Legeplads: @SelectedSpaceDetails.MetersFromPlayground m</span>
+                                    }
+                                    @if (SelectedSpaceDetails.MetersFromOcean is not null)
+                                    {
+                                        <span>, Hav: @SelectedSpaceDetails.MetersFromOcean m</span>
+                                    }
+                                </div>
+                                <div class="mt-1">
+                                    <span class="label">Pris pr. nat:</span>
+                                    @SelectedSpaceDetails.PricePerNight.ToString("C")
+                                </div>
+                                <div>
+                                    <span class="label">Status:</span>
+                                    @(SelectedSpaceDetails.IsAvailable ? "Ledig" : "Optaget / ikke tilgængelig")
+                                </div>
+                            </div>
+                        }
+
                         <hr />
 
+                        @* Booking-listen beholdes *@
                         @if (IsLoadingBookings)
                         {
-                            <div class="text-muted" style="font-size:.85rem;">
-                                Henter bookinger...
-                            </div>
+                            <div class="text-muted" style="font-size:.85rem;">Henter bookinger...</div>
                         }
                         else if (!string.IsNullOrWhiteSpace(BookingError))
                         {
-                            <div class="text-danger" style="font-size:.85rem;">
-                                @BookingError
-                            </div>
+                            <div class="text-danger" style="font-size:.85rem;">@BookingError</div>
                         }
                         else if (SelectedBookings.Count == 0)
                         {
-                            <div class="text-muted" style="font-size:.85rem;">
-                                Ingen bookinger fundet for denne enhed.
-                            </div>
+                            <div class="text-muted" style="font-size:.85rem;">Ingen bookinger fundet.</div>
                         }
                         else
                         {
@@ -124,7 +182,9 @@
                                     <div class="booking-row" style="margin-bottom:.5rem;">
                                         <div>
                                             <span class="label">Periode:</span>
-                                            @b.DateStart.ToString("dd-MM-yyyy") - @b.DateEnd.ToString("dd-MM-yyyy")
+                                            @b.DateStart.ToString("dd-MM-yyyy")
+                                            -
+                                            @b.DateEnd.ToString("dd-MM-yyyy")
                                         </div>
                                         <div>
                                             <span class="label">Gæst:</span>
@@ -163,12 +223,44 @@ else
         public decimal TotalPrice { get; set; }
     }
 
+    public sealed class CottageDetailsVm
+    {
+        public string Name { get; set; } = "";
+        public string Location { get; set; } = "";
+        public string Description { get; set; } = "";
+        public bool HasToilet { get; set; }
+        public bool HasShower { get; set; }
+        public bool HasKitchen { get; set; }
+        public bool HasHeating { get; set; }
+        public bool HasWiFi { get; set; }
+        public bool IsAvailable { get; set; }
+        public decimal PricePerNight { get; set; }
+    }
+
+    public sealed class SpaceDetailsVm
+    {
+        public string Name { get; set; } = "";
+        public string Location { get; set; } = "";
+        public string Description { get; set; } = "";
+        public bool HasElectricity { get; set; }
+        public int MetersFromToilet { get; set; }
+        public int? MetersFromPool { get; set; }
+        public int? MetersFromPlayground { get; set; }
+        public int? MetersFromOcean { get; set; }
+        public bool IsAvailable { get; set; }
+        public decimal PricePerNight { get; set; }
+    }
+
     private List<CampsiteVm> Campsites = new();
     private string? SelectedCampsiteId;
-    private CampsiteVm? SelectedCampsite => Campsites.FirstOrDefault(c => c.Id == SelectedCampsiteId);
-    private string BgImageUrl => string.IsNullOrWhiteSpace(SelectedCampsite?.ImageUrl)
-        ? "images/campsite.jpg"
-        : SelectedCampsite!.ImageUrl;
+
+    private CampsiteVm? SelectedCampsite =>
+        Campsites.FirstOrDefault(c => c.Id == SelectedCampsiteId);
+
+    private string BgImageUrl =>
+        string.IsNullOrWhiteSpace(SelectedCampsite?.ImageUrl)
+            ? "images/campsite.jpg"
+            : SelectedCampsite!.ImageUrl;
 
     private List<UnitVm> Units = new();
     private UnitVm? Selected;
@@ -176,6 +268,9 @@ else
     private List<BookingSummaryForUnitDto> SelectedBookings = new();
     private bool IsLoadingBookings;
     private string? BookingError;
+
+    private CottageDetailsVm? SelectedCottageDetails;
+    private SpaceDetailsVm? SelectedSpaceDetails;
 
     protected override async Task OnInitializedAsync()
     {
@@ -186,7 +281,9 @@ else
     {
         try
         {
-            Campsites = (await Http.GetFromJsonAsync<List<CampsiteVm>>("api/campsites")) ?? new();
+            Campsites =
+                (await Http.GetFromJsonAsync<List<CampsiteVm>>("api/campsites"))
+                ?? new();
         }
         catch
         {
@@ -199,16 +296,25 @@ else
         Selected = null;
         Units.Clear();
         SelectedBookings.Clear();
+        SelectedCottageDetails = null;
+        SelectedSpaceDetails = null;
         BookingError = null;
 
         if (string.IsNullOrEmpty(SelectedCampsiteId))
             return;
 
         var url = $"api/units?campsiteId={SelectedCampsiteId}";
-        var data = await Http.GetFromJsonAsync<List<UnitDto>>(url) ?? new();
-        Units = data.Select(d => new UnitVm(d.Id, d.Name, d.Type, d.X, d.Y)).ToList();
+        var data = await Http.GetFromJsonAsync<List<UnitDto>>(url)
+                   ?? new();
 
-        await JS.InvokeVoidAsync("CampsiteMap.initPanZoom", "#mapContainer", "#campsiteSvg");
+        Units = data
+            .Select(d => new UnitVm(d.Id, d.Name, d.Type, d.X, d.Y))
+            .ToList();
+
+        await JS.InvokeVoidAsync("CampsiteMap.initPanZoom",
+            "#mapContainer",
+            "#campsiteSvg");
+
         StateHasChanged();
     }
 
@@ -216,19 +322,39 @@ else
     {
         Selected = u;
         SelectedBookings.Clear();
+        SelectedCottageDetails = null;
+        SelectedSpaceDetails = null;
         BookingError = null;
         IsLoadingBookings = true;
 
         try
         {
-            var url = $"api/booking/by-unit/{u.Id}?type={u.Type}";
-            var result = await Http.GetFromJsonAsync<List<BookingSummaryForUnitDto>>(url);
+            // Hent bookinger
+            var bookingsTask =
+                Http.GetFromJsonAsync<List<BookingSummaryForUnitDto>>(
+                    $"api/booking/by-unit/{u.Id}?type={u.Type}");
+
+            // Hent detaljer for enheden
+            if (u.Type == "Cottage")
+            {
+                SelectedCottageDetails =
+                    await Http.GetFromJsonAsync<CottageDetailsVm>($"api/cottage/{u.Id}");
+                SelectedSpaceDetails = null;
+            }
+            else if (u.Type == "Space")
+            {
+                SelectedSpaceDetails =
+                    await Http.GetFromJsonAsync<SpaceDetailsVm>($"api/space/{u.Id}");
+                SelectedCottageDetails = null;
+            }
+
+            var result = await bookingsTask;
             SelectedBookings = result ?? new();
         }
         catch (Exception ex)
         {
-            BookingError = "Kunne ikke hente bookinger for enheden.";
-            Console.WriteLine(ex);
+            BookingError = "Kunne ikke hente oplysninger for enheden.";
+            Console.Error.WriteLine(ex);
         }
         finally
         {
@@ -241,6 +367,8 @@ else
     {
         Selected = null;
         SelectedBookings.Clear();
+        SelectedCottageDetails = null;
+        SelectedSpaceDetails = null;
         BookingError = null;
     }
 }
