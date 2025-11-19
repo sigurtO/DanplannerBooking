@@ -43,9 +43,18 @@ else
                         📶 WiFi: @(cottage.HasWiFi ? "Yes" : "No")
                     </td>
                     <td>
-                        @if (!string.IsNullOrWhiteSpace(cottage.ImageUrl))
+                        @if (cottage.Image != null && cottage.Image.Length > 0)
                         {
-                            <img src="@cottage.ImageUrl" alt="cottage image" width="100" />
+                            <img class="card-img-top"
+                                 src="@($"data:image/png;base64,{Convert.ToBase64String(cottage.Image)}")"
+                                 alt="Apartment Image"
+                                 style="height:200px; object-fit:cover;" />
+                        }
+                        else
+                        {
+                            <div class="card-img-top text-center p-5 bg-light text-muted">
+                                No Image
+                            </div>
                         }
                     </td>
                     <td>
@@ -116,8 +125,9 @@ else
         </div>
 
         <div>
-            <label>Image URL:</label>
-            <InputText @bind-Value="editCottage.Image" class="form-control" />
+            <ImageUpload Label="Cottage Image"
+                         InputId="cottageimage"
+                         OnImageSelected="HandleCottageImage" />
         </div>
 
         <button type="submit" class="btn btn-success">Save Changes</button>
@@ -160,7 +170,7 @@ else
             HasWiFi = cottage.HasWiFi,
             IsAvailable = cottage.IsAvailable,
             PricePerNight = cottage.PricePerNight,
-            Image = cottage.ImageUrl
+            Image = cottage.Image
         };
     }
 
@@ -196,5 +206,10 @@ else
     private void CancelEdit()
     {
         editCottage = null;
+    }
+
+    private void HandleCottageImage(byte[] imageBytes)
+    {
+        editCottage.Image = imageBytes;
     }
 }
