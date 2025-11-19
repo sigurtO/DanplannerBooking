@@ -53,16 +53,28 @@ namespace DanplannerBooking.Api.Controllers
 
         // GET: api/booking/by-unit/{unitId}?type=Space|Cottage
         [HttpGet("by-unit/{unitId:guid}")]
-        public async Task<IActionResult> GetBookingsForUnit(Guid unitId, [FromQuery] string type)
+        public async Task<ActionResult<IEnumerable<BookingSummaryForUnitDto>>> GetBookingsForUnit(
+            Guid unitId,
+            [FromQuery] string type)
         {
             if (string.IsNullOrWhiteSpace(type))
             {
                 return BadRequest("Query parameter 'type' must be 'Space' or 'Cottage'.");
             }
 
-            var allBookings = await _bookingRepository.GetAllAsync();
+            // Hent alle bookinger (inkl. navigation properties) og sørg for,
+            // at vi ikke crasher, selv hvis repositoriet skulle returnere null.
+            var allBookings = (await _bookingRepository.GetAllAsync())?.ToList()
+                              ?? new List<Booking>();
 
-            IEnumerable<Booking> filtered;
+            // Hvis der slet ikke er bookinger, returnér bare en tom liste.
+            if (!allBookings.Any())
+            {
+                return Ok(new List<BookingSummaryForUnitDto>());
+            }
+
+            IEnumerable<Booking>? filtered = null;
+
             if (type.Equals("Space", StringComparison.OrdinalIgnoreCase))
             {
                 filtered = allBookings.Where(b => b.SpaceId == unitId);
@@ -76,15 +88,17 @@ namespace DanplannerBooking.Api.Controllers
                 return BadRequest("Query parameter 'type' must be 'Space' or 'Cottage'.");
             }
 
-            var result = filtered.Select(b => new BookingSummaryForUnitDto
-            {
-                Id = b.Id,
-                DateStart = b.DateStart,
-                DateEnd = b.DateEnd,
-                UserName = b.User?.Name ?? "",
-                NumberOfPeople = b.NumberOfPeople,
-                TotalPrice = b.TotalPrice
-            }).ToList();
+            var result = filtered
+                .Select(b => new BookingSummaryForUnitDto
+                {
+                    Id = b.Id,
+                    DateStart = b.DateStart,
+                    DateEnd = b.DateEnd,
+                    UserName = b.User?.Name ?? string.Empty,
+                    NumberOfPeople = b.NumberOfPeople,
+                    TotalPrice = b.TotalPrice
+                })
+                .ToList();
 
             return Ok(result);
         }
@@ -95,6 +109,7 @@ namespace DanplannerBooking.Api.Controllers
         {
             var newBooking = new Booking
             {
+                Id = Guid.NewGuid(),
                 UserId = bookingDto.UserId,
                 NumberOfPeople = bookingDto.NumberOfPeople,
                 DateStart = bookingDto.DateStart,
@@ -132,7 +147,6 @@ namespace DanplannerBooking.Api.Controllers
             {
                 return NotFound();
             }
-
             return NoContent();
         }
 
