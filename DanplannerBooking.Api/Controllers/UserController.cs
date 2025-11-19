@@ -51,8 +51,13 @@ namespace DanplannerBooking.Api.Controllers
                 Phone = createUserDto.Phone,
                 Country = createUserDto.Country,
                 Language = createUserDto.Language,
-                IsAdmin = false, // Default to false
-                Password = createUserDto.Password // Hash password at some point
+
+                // Brug den role klienten sender – fallback til "User"
+                Role = string.IsNullOrWhiteSpace(createUserDto.Role)
+            ? "User"
+            : createUserDto.Role,
+
+                Password = createUserDto.Password // TODO: Hash password senere
             };
             await _userRepository.CreateAsync(user);
             return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, null);
@@ -84,7 +89,7 @@ namespace DanplannerBooking.Api.Controllers
         }
 
         [HttpPut("{id}")] //Update user by id (admin)
-       // [Authorize(Policy = "AdminOnly")] //check happens in program.cs
+                          // [Authorize(Policy = "AdminOnly")] //check happens in program.cs
         public async Task<ActionResult> UpdateUser(Guid id, [FromBody] AdminUpdateUserDto adminUpdateUserDto)
         {
             var user = new User
@@ -94,7 +99,7 @@ namespace DanplannerBooking.Api.Controllers
                 Phone = adminUpdateUserDto.Phone,
                 Country = adminUpdateUserDto.Country,
                 Language = adminUpdateUserDto.Language,
-                IsAdmin = adminUpdateUserDto.IsAdmin
+                Role = adminUpdateUserDto.Role
             };
             var result = await _userRepository.UpdateAsync(id, user);
             if (!result)
@@ -106,7 +111,7 @@ namespace DanplannerBooking.Api.Controllers
 
         //Delete api/user/{id}
         [HttpDelete("{id}")]
-       // [Authorize(Policy = "AdminOnly")]
+        // [Authorize(Policy = "AdminOnly")]
         public async Task<ActionResult> DeleteUser(Guid id)
         {
             var result = await _userRepository.DeleteAsync(id);

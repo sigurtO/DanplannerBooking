@@ -2,6 +2,10 @@ using DanplannerBooking.Application.Interfaces;
 using DanplannerBooking.Infrastructure.Context;
 using DanplannerBooking.Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+    
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,20 +27,43 @@ builder.Services.AddScoped<IAddOnRepository, AddOnRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 
 
-builder.Services.AddAuthorization(options =>  //Dont know if this works just a test but it's used in controller
-{
-    options.AddPolicy("AdminOnly", policy =>
-        policy.RequireClaim("IsAdmin", "true"));
-});
+builder.Services.AddAuthorization();
+var jwt = builder.Configuration.GetSection("Jwt");
+var key = Encoding.UTF8.GetBytes(jwt["Key"]);
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = true;
+        options.SaveToken = true;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwt["Issuer"],
+
+            ValidateAudience = true,
+            ValidAudience = jwt["Audience"],
+
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
 
 
 // CORS for Blazor WASM (development)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("WasmDev", policy =>
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod());
+        policy.WithOrigins(
+            "https://localhost:7090",   //  DIN UI HTTPS PORT
+            "http://localhost:7090"     //  UI kan også starte på HTTP ved debugging
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials());
 });
 
 var app = builder.Build();
@@ -51,6 +78,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseCors("WasmDev");
+app.UseAuthentication();
 
 app.UseAuthorization();
 
