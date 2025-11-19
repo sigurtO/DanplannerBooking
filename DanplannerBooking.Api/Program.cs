@@ -1,19 +1,25 @@
 using DanplannerBooking.Application.Interfaces;
 using DanplannerBooking.Infrastructure.Context;
 using DanplannerBooking.Infrastructure.Repository;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// --------------------
 // Services
+// --------------------
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// DbContext + repositories
+// DbContext
 builder.Services.AddDbContext<DbContextBooking>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICampsiteRepository, CampsiteRepository>();
 builder.Services.AddScoped<ISpaceRepository, SpaceRepository>();
@@ -21,16 +27,47 @@ builder.Services.AddScoped<ICottageRepository, CottageRepository>();
 builder.Services.AddScoped<IAddOnRepository, AddOnRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 
-builder.Services.AddAuthorization(opt =>
+// --------------------
+// Auth + JWT
+// --------------------
+builder.Services.AddAuthorization(options =>
 {
-    opt.AddPolicy("AdminOnly", p => p.RequireClaim("IsAdmin", "true"));
+    // Politik hvis du vil bruge [Authorize(Policy = "AdminOnly")]
+    options.AddPolicy("AdminOnly", p => p.RequireClaim("IsAdmin", "true"));
 });
 
+var jwt = builder.Configuration.GetSection("Jwt");
+var key = Encoding.UTF8.GetBytes(jwt["Key"]!);
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = true;
+        options.SaveToken = true;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwt["Issuer"],
+
+            ValidateAudience = true,
+            ValidAudience = jwt["Audience"],
+
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
+// --------------------
 // CORS: allow UI origins
+// --------------------
 var allowedOrigins = new[]
 {
     "https://localhost:7090", // UI via Visual Studio (HTTPS)
-    "http://localhost:5145"   // UI via `dotnet run` (HTTP)
+    "http://localhost:7090",  // UI på HTTP
+    "http://localhost:5145"   // evt. ekstra HTTP-profil
 };
 
 builder.Services.AddCors(opt =>
@@ -38,11 +75,15 @@ builder.Services.AddCors(opt =>
     opt.AddPolicy("Dev", p => p
         .WithOrigins(allowedOrigins)
         .AllowAnyHeader()
-        .AllowAnyMethod());
+        .AllowAnyMethod()
+        .AllowCredentials());
 });
 
 var app = builder.Build();
 
+// --------------------
+// Middleware pipeline
+// --------------------
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -51,7 +92,12 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
 app.UseCors("Dev");
+
+app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
+
 app.Run();

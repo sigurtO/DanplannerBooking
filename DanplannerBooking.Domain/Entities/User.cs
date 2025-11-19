@@ -9,7 +9,9 @@
         public string Phone { get; set; }
         public string Country { get; set; }
         public string Language { get; set; }
-        public bool IsAdmin { get; set; } = false; // Default to false for regular users
+        public string Role { get; set; } = "User"; // Admin / User
+        public string? RefreshToken { get; set; }
+        public DateTime? RefreshTokenExpiryTime { get; set; }
     }
 
 

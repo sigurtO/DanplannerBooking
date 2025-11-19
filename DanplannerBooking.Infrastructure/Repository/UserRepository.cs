@@ -54,8 +54,8 @@ namespace DanplannerBooking.Infrastructure.Repository
             existingUser.Phone = updatedUser.Phone;
             existingUser.Country = updatedUser.Country;
             existingUser.Language = updatedUser.Language;
-            existingUser.IsAdmin = updatedUser.IsAdmin;
-            //we dont update password
+            existingUser.Role = updatedUser.Role; 
+             // We do not update the password
 
             await _context.SaveChangesAsync();
             return true;
