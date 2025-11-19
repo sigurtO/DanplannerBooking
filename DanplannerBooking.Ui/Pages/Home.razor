@@ -1,5 +1,47 @@
 ﻿@page "/"
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthProvider
+@inject NavigationManager Nav
 
-<PageTitle>Home</PageTitle>
+<h3>Home</h3>
 
-<h1>Login side under opbygning</h1>
+<AuthorizeView>
+    <Authorized>
+        @if (role == null)
+        {
+            <p>Loading...</p>
+        }
+        else if (role == "Admin")
+        {
+            <AdminDashboard />
+        }
+        else
+        {
+            <UserDashboard />
+        }
+    </Authorized>
+
+    <NotAuthorized>
+        <p>You are not logged in.</p>
+        <button class="btn btn-primary" @onclick="Login">
+            Login
+        </button>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private string? role;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        role = user.FindFirst("role")?.Value ?? "User";
+    }
+
+    private void Login()
+    {
+        Nav.NavigateTo("/login");
+    }
+}

@@ -27,7 +27,7 @@ else
                 <tr>
                     <td>@user.Name</td>
                     <td>@user.Email</td>
-                    <td>@(user.IsAdmin ? "Admin" : "User")</td>
+                    <td>@(user.Role == "Admin" ? "Admin" : "User")</td>
                     <td>
                         <button class="btn btn-warning btn-sm" @onclick="() => EditUser(user)">Update</button>
                         <button class="btn btn-danger btn-sm" @onclick="() => DeleteUser(user.Id)">Delete</button>
@@ -104,7 +104,7 @@ else
             Phone = user.Phone,
             Country = user.Country,
             Language = user.Language,
-            IsAdmin = user.IsAdmin
+            Role = user.Role
         };
     }
 
@@ -123,7 +123,7 @@ else
                     editUser.Phone,
                     editUser.Country,
                     editUser.Language,
-                    users[index].IsAdmin // preserve admin flag
+                   editUser.Role // preserve admin flag
                 );
 
             }

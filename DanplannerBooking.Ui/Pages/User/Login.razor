@@ -1,0 +1,48 @@
+﻿@page "/login"
+@using DanplannerBooking.Application.Dtos.User
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthProvider
+
+<h3>Login</h3>
+
+@if (errorMessage != null)
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<div class="card p-3" style="max-width: 400px;">
+    <input class="form-control mb-2" placeholder="Email" @bind="login.Email" />
+    <input class="form-control mb-2" type="password" placeholder="Password" @bind="login.Password" />
+
+    <button class="btn btn-primary w-100" @onclick="HandleLogin">Login</button>
+</div>
+
+@code {
+    private LoginRequestDto login = new();
+    private string? errorMessage;
+
+    private async Task HandleLogin()
+    {
+        errorMessage = null;
+
+        var response = await Http.PostAsJsonAsync("api/auth/login", login);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            errorMessage = "Invalid email or password.";
+            return;
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<LoginResponseDto>();
+
+        var jwtProvider = (JwtAuthenticationStateProvider)AuthProvider;
+        await jwtProvider.MarkUserAsAuthenticated(result.Token);
+
+        // Redirect based on role
+        if (result.Role == "Admin")
+            Nav.NavigateTo("/admin");
+        else
+            Nav.NavigateTo("/booking");
+    }
+}
