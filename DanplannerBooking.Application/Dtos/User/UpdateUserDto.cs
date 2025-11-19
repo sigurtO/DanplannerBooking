@@ -23,7 +23,8 @@ namespace DanplannerBooking.Application.Dtos.User
 
     public class AdminUpdateUserDto : UpdateUserDto
     {
-        public bool IsAdmin { get; set; }
+        public string Role { get; set; }   // "Admin" / "User"
+
     }
 
     public class ChangePasswordDto
@@ -32,18 +33,24 @@ namespace DanplannerBooking.Application.Dtos.User
         public string CurrentPassword { get; set; }
         [Required]
         public string NewPassword { get; set; }
+       
+
     }
 
     public class CreateUserDto : UpdateUserDto
     {
         [Required]
         public string Password { get; set; }
+        public string Role { get; set; } = "User"; // Default
+
     }
 
     public class RegisterUserDto : UpdateUserDto
     {
         [Required]
         public string Password { get; set; }
+        public string Role { get; set; } = "User";
+
     }
 
     public record UserResponseDto(
@@ -53,6 +60,6 @@ namespace DanplannerBooking.Application.Dtos.User
     string? Phone,
     string? Country,
     string? Language,
-    bool IsAdmin
+    string Role
     );
 }
