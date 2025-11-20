@@ -48,4 +48,10 @@ namespace DanplannerBooking.Application.Dtos.Booking
         //Guid? BundleId,
         //Bundle Bundle
     );
+    public record BookingDashboardDto(
+        Guid Id,
+        string UserName,
+        DateTime DateStart,
+        DateTime DateEnd
+    );
 }
