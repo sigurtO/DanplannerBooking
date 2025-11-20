@@ -1,4 +1,5 @@
-﻿using DanplannerBooking.Application.Interfaces;
+﻿using DanplannerBooking.Application.Dtos.Booking;
+using DanplannerBooking.Application.Interfaces;
 using DanplannerBooking.Domain.Entities;
 using DanplannerBooking.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
@@ -75,6 +76,19 @@ namespace DanplannerBooking.Infrastructure.Repository
             await _context.SaveChangesAsync();
             return true;
         }
+        public async Task<List<BookingDashboardDto>> GetDashboardDataAsync()
+        {
+            return await _context.Bookings
+                .Include(b => b.User)
+                .Select(b => new BookingDashboardDto(
+                    b.Id,
+                    b.User.Name,
+                    b.DateStart,
+                    b.DateEnd
+                ))
+                .ToListAsync();
+        }
+
     }
 
 }

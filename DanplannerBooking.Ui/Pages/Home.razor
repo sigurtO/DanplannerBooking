@@ -1,46 +1,171 @@
 ﻿@page "/"
 @using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using DanplannerBooking.Application.Dtos.Booking
 @inject AuthenticationStateProvider AuthProvider
 @inject NavigationManager Nav
+@inject HttpClient Http
 
-<h3>Home</h3>
+<h3 class="mb-4">Admin Dashboard</h3>
 
 <AuthorizeView>
     <Authorized>
         @if (role == null)
         {
-            <p>Loading...</p>
+            <p>Loader...</p>
         }
-        else if (role == "Admin")
+        else if (role != "Admin")
         {
-            <AdminDashboard />
+            <div class="alert alert-danger">
+                Du har ikke adgang til denne side.
+            </div>
+
+            <button class="btn btn-primary" @onclick="GoToLogin">
+                Login som administrator
+            </button>
         }
         else
         {
-            <UserDashboard />
+            <!-- TOP STATS -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card shadow-sm p-3 border-0" style="background:#e8f8e8;">
+                        <h5 class="card-title text-success">Ankomster i dag</h5>
+                        <h1 class="text-success fw-bold">@((arrivals?.Count ?? 0))</h1>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card shadow-sm p-3 border-0" style="background:#fdeaea;">
+                        <h5 class="card-title text-danger">Afrejser i dag</h5>
+                        <h1 class="text-danger fw-bold">@((departures?.Count ?? 0))</h1>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ARRIVALS LIST -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="m-0">Ankomster i dag</h5>
+                </div>
+                <div class="card-body">
+                    @if (arrivals == null)
+                    {
+                        <p>Loader...</p>
+                    }
+                    else if (!arrivals.Any())
+                    {
+                        <p>Ingen ankomster i dag.</p>
+                    }
+                    else
+                    {
+                        <ul class="list-group">
+                            @foreach (var b in arrivals)
+                            {
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>
+                                        <strong>@b.UserName</strong><br />
+                                        <small>Starter: @b.DateStart.ToShortDateString()</small>
+                                    </span>
+
+                                    <span class="badge bg-success">Kommer i dag</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+
+            <!-- DEPARTURES LIST -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="m-0">Afrejser i dag</h5>
+                </div>
+                <div class="card-body">
+                    @if (departures == null)
+                    {
+                        <p>Loader...</p>
+                    }
+                    else if (!departures.Any())
+                    {
+                        <p>Ingen afrejser i dag.</p>
+                    }
+                    else
+                    {
+                        <ul class="list-group">
+                            @foreach (var b in departures)
+                            {
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>
+                                        <strong>@b.UserName</strong><br />
+                                        <small>Slutter: @b.DateEnd.ToShortDateString()</small>
+                                    </span>
+
+                                    <span class="badge bg-danger">Rejser i dag</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+
+            <!-- ADMIN NAVIGATION -->
+            <div class="card shadow-sm p-3">
+                <h5 class="mb-3">Administration</h5>
+
+                <div class="row row-cols-1 row-cols-md-3 g-3">
+                    <div class="col">
+                        <a class="btn btn-outline-primary w-100" href="/users">Brugere</a>
+                    </div>
+                    <div class="col">
+                        <a class="btn btn-outline-primary w-100" href="/spaces-admin">Pladser</a>
+                    </div>
+                    <div class="col">
+                        <a class="btn btn-outline-primary w-100" href="/cottages-admin">Hytter</a>
+                    </div>
+                    <div class="col">
+                        <a class="btn btn-outline-success w-100" href="/create-Space">Opret plads</a>
+                    </div>
+                    <div class="col">
+                        <a class="btn btn-outline-success w-100" href="/create-Cottage">Opret hytte</a>
+                    </div>
+                    <div class="col">
+                        <a class="btn btn-outline-success w-100" href="/create-Addon">Opret tilkøb</a>
+                    </div>
+                </div>
+            </div>
         }
     </Authorized>
 
     <NotAuthorized>
-        <p>You are not logged in.</p>
-        <button class="btn btn-primary" @onclick="Login">
-            Login
-        </button>
+        <p>Du er ikke logget ind som administrator.</p>
+        <button class="btn btn-primary" @onclick="GoToLogin">Login</button>
     </NotAuthorized>
 </AuthorizeView>
 
+
 @code {
     private string? role;
+
+    private List<BookingDashboardDto>? arrivals;
+    private List<BookingDashboardDto>? departures;
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
-        role = user.FindFirst("role")?.Value ?? "User";
+        role = user.FindFirst(ClaimTypes.Role)?.Value
+            ?? user.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value;
+
+        if (role == "Admin")
+        {
+            arrivals = await Http.GetFromJsonAsync<List<BookingDashboardDto>>("api/booking/arrivals-today");
+            departures = await Http.GetFromJsonAsync<List<BookingDashboardDto>>("api/booking/departures-today");
+        }
     }
 
-    private void Login()
+    private void GoToLogin()
     {
         Nav.NavigateTo("/login");
     }

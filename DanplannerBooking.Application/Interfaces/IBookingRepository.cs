@@ -1,4 +1,5 @@
-﻿using DanplannerBooking.Domain.Entities;
+﻿using DanplannerBooking.Application.Dtos.Booking;
+using DanplannerBooking.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,5 +15,7 @@ namespace DanplannerBooking.Application.Interfaces
         Task CreateAsync(Booking booking);
         Task<bool> UpdateAsync(Guid id, Booking booking);
         Task<bool> DeleteAsync(Guid id);
+        Task<List<BookingDashboardDto>> GetDashboardDataAsync();
+
     }
 }
