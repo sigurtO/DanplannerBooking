@@ -207,9 +207,9 @@ namespace DanplannerBooking.Infrastructure.Migrations
                     b.Property<bool>("HasElectricity")
                         .HasColumnType("bit");
 
-                    b.Property<string>("ImageUrl")
+                    b.Property<byte[]>("Image")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("varbinary(max)");
 
                     b.Property<bool>("IsAvailable")
                         .HasColumnType("bit");

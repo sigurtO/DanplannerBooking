@@ -1,6 +1,7 @@
 ﻿@page "/space/{spaceId:guid}"
 @using DanplannerBooking.Application.Dtos.Space
 @inject HttpClient Http
+@inject NavigationManager NavigationManager
 
 <h3>Space Details</h3>
 
@@ -29,7 +30,7 @@ else
             </div>
             <div class="col-md-7">
                 <div class="card-body">
-                    <h4 class="card-title"> @space.Name</h4>
+                    <h4 class="card-title">@space.Name</h4>
                     <p class="card-text">
                         <strong>Location:</strong> @space.Location<br />
                         <strong>Description:</strong> @space.Description<br />
@@ -37,28 +38,161 @@ else
                         <strong>Status:</strong> @(space.IsAvailable ? "✅ Available" : "❌ Unavailable")<br />
                         <strong>Electricity:</strong> @(space.HasElectricity ? "⚡ Yes" : "No")<br />
                         <strong>Distances:</strong><br />
-                        🚽 @space.MetersFromToilet m
-                        <br />
-                        @(space.MetersFromPool.HasValue ? $"🏊 {space.MetersFromPool} m" : "")
-                        <br />
-                        @(space.MetersFromPlayground.HasValue ? $"🛝 {space.MetersFromPlayground} m" : "")
-                        <br />
+                        🚽 @space.MetersFromToilet m<br />
+                        @(space.MetersFromPool.HasValue ? $"🏊 {space.MetersFromPool} m" : "")<br />
+                        @(space.MetersFromPlayground.HasValue ? $"🛝 {space.MetersFromPlayground} m" : "")<br />
                         @(space.MetersFromOcean.HasValue ? $"🌊 {space.MetersFromOcean} m" : "")
                     </p>
+
                     <button class="btn btn-success">Book Now</button>
                     <p class="mt-2 text-muted">Free cancellation up to 48 hours before check-in</p>
+
+                    <!-- Admin actions -->
+                    <div class="mt-3">
+                        <button class="btn btn-warning btn-sm" @onclick="EditSpace">Update</button>
+                        <button class="btn btn-danger btn-sm" @onclick="DeleteSpace">Delete</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 }
 
+@if (editSpace != null)
+{
+    <h4>Edit Space</h4>
+    <EditForm Model="@editSpace" OnValidSubmit="HandleUpdate">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div>
+            <label>Name:</label>
+            <InputText @bind-Value="editSpace.Name" class="form-control" />
+        </div>
+
+        <div>
+            <label>Location:</label>
+            <InputText @bind-Value="editSpace.Location" class="form-control" />
+        </div>
+
+        <div>
+            <label>Description:</label>
+            <InputText @bind-Value="editSpace.Description" class="form-control" />
+        </div>
+
+        <div>
+            <label>Price Per Night:</label>
+            <InputNumber @bind-Value="editSpace.PricePerNight" class="form-control" />
+        </div>
+
+        <div class="form-check">
+            <InputCheckbox @bind-Value="editSpace.IsAvailable" class="form-check-input" />
+            <label class="form-check-label">Available</label>
+        </div>
+
+        <div class="form-check">
+            <InputCheckbox @bind-Value="editSpace.HasElectricity" class="form-check-input" />
+            <label class="form-check-label">Has Electricity</label>
+        </div>
+
+        <div>
+            <label>Meters from Toilet:</label>
+            <InputNumber @bind-Value="editSpace.MetersFromToilet" class="form-control" />
+        </div>
+
+        <div>
+            <label>Meters from Pool:</label>
+            <InputNumber @bind-Value="editSpace.MetersFromPool" class="form-control" />
+        </div>
+
+        <div>
+            <label>Meters from Playground:</label>
+            <InputNumber @bind-Value="editSpace.MetersFromPlayground" class="form-control" />
+        </div>
+
+        <div>
+            <label>Meters from Ocean:</label>
+            <InputNumber @bind-Value="editSpace.MetersFromOcean" class="form-control" />
+        </div>
+
+        <div>
+            <ImageUpload Label="Space Image"
+                         InputId="spaceimage"
+                         OnImageSelected="HandleSpaceImage" />
+        </div>
+
+        <button type="submit" class="btn btn-success">Save Changes</button>
+        <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+    </EditForm>
+}
+
+
 @code {
     [Parameter] public Guid spaceId { get; set; }
     private SpaceResponseDto? space;
+    private CreateSpaceDto? editSpace;
 
     protected override async Task OnInitializedAsync()
     {
         space = await Http.GetFromJsonAsync<SpaceResponseDto>($"api/space/{spaceId}");
+    }
+
+    private void EditSpace()
+    {
+        if (space == null) return;
+
+        editSpace = new CreateSpaceDto
+        {
+            CampsiteId = space.CampsiteId,
+            Name = space.Name,
+            Location = space.Location,
+            Description = space.Description,
+            PricePerNight = space.PricePerNight,
+            IsAvailable = space.IsAvailable,
+            HasElectricity = space.HasElectricity,
+            MetersFromToilet = space.MetersFromToilet,
+            MetersFromPool = space.MetersFromPool,
+            MetersFromPlayground = space.MetersFromPlayground,
+            MetersFromOcean = space.MetersFromOcean,
+            Image = space.Image
+        };
+    }
+    private void NavigateToBooking()
+    {
+        NavigationManager.NavigateTo($"/book-space/{spaceId}");
+    }
+
+    private async Task HandleUpdate()
+    {
+        if (editSpace == null) return;
+
+        var response = await Http.PutAsJsonAsync($"api/space/{spaceId}", editSpace);
+        if (response.IsSuccessStatusCode)
+        {
+            space = await Http.GetFromJsonAsync<SpaceResponseDto>($"api/space/{spaceId}");
+            editSpace = null;
+        }
+    }
+
+    private async Task DeleteSpace()
+    {
+        var response = await Http.DeleteAsync($"api/space/{spaceId}");
+        if (response.IsSuccessStatusCode)
+        {
+            NavigationManager.NavigateTo("/allListings");
+        }
+    }
+
+    private void CancelEdit()
+    {
+        editSpace = null;
+    }
+
+    private void HandleSpaceImage(byte[] imageBytes)
+    {
+        if (editSpace != null)
+        {
+            editSpace.Image = imageBytes;
+        }
     }
 }

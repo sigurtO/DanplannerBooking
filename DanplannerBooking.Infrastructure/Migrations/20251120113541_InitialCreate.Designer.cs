@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DanplannerBooking.Infrastructure.Migrations
 {
     [DbContext(typeof(DbContextBooking))]
-    [Migration("20251120102231_InitialCreate")]
+    [Migration("20251120113541_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -210,9 +210,9 @@ namespace DanplannerBooking.Infrastructure.Migrations
                     b.Property<bool>("HasElectricity")
                         .HasColumnType("bit");
 
-                    b.Property<string>("ImageUrl")
+                    b.Property<byte[]>("Image")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("varbinary(max)");
 
                     b.Property<bool>("IsAvailable")
                         .HasColumnType("bit");

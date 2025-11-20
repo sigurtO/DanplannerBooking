@@ -18,7 +18,7 @@ namespace DanplannerBooking.Infrastructure.Repository
             _context = context;
         }
 
-    public async Task CreateAsync(Space space)
+        public async Task CreateAsync(Space space)
         {
             _context.Spaces.Add(space);
             await _context.SaveChangesAsync();
@@ -49,6 +49,11 @@ namespace DanplannerBooking.Infrastructure.Repository
         {
             var existingSpace = await _context.Spaces.FindAsync(id);
             if (existingSpace == null) return false;
+    
+            existingSpace.Name = updatedSpace.Name;
+            existingSpace.Location = updatedSpace.Location;
+            existingSpace.Description = updatedSpace.Description;
+            existingSpace.CampsiteId = updatedSpace.CampsiteId;
 
             existingSpace.HasElectricity = updatedSpace.HasElectricity;
             existingSpace.MetersFromToilet = updatedSpace.MetersFromToilet;
@@ -57,7 +62,11 @@ namespace DanplannerBooking.Infrastructure.Repository
             existingSpace.MetersFromOcean = updatedSpace.MetersFromOcean;
             existingSpace.IsAvailable = updatedSpace.IsAvailable;
             existingSpace.PricePerNight = updatedSpace.PricePerNight;
-            existingSpace.Image = updatedSpace.Image;
+
+            if (updatedSpace.Image != null && updatedSpace.Image.Length > 0)
+            {
+                existingSpace.Image = updatedSpace.Image;
+            }
 
             await _context.SaveChangesAsync();
             return true;
