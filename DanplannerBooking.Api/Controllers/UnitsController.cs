@@ -11,313 +11,203 @@ namespace DanplannerBooking.Api.Controllers;
 public class UnitsController : ControllerBase
 {
     private readonly DbContextBooking _db;
-    public UnitsController(DbContextBooking db) => _db = db;
 
+    public UnitsController(DbContextBooking db)
+    {
+        _db = db;
+    }
+
+    // Små interne DTOs til options-endpointet
     public sealed class UnitOptionDto
     {
         public Guid Id { get; set; }
         public string Name { get; set; } = "";
-        public string Type { get; set; } = "";     // Space | Cottage
-        public bool HasPosition { get; set; }
+        public string Type { get; set; } = "";     // "Space" | "Cottage"
+        public bool HasPosition { get; set; }      // true hvis (X,Y) != (0,0)
         public Guid CampsiteId { get; set; }
     }
 
-    public sealed class SetPositionDto
-    {
-        public int X { get; set; }
-        public int Y { get; set; }
-    }
-
+    // ----------------------------
     // GET api/units?campsiteId=...
+    // Bruges af map + editor til at hente alle enheder for en plads
+    // ----------------------------
     [HttpGet]
     public async Task<ActionResult<IEnumerable<UnitDto>>> GetUnits(
         [FromQuery] Guid? campsiteId,
         CancellationToken ct)
     {
-        var spacesQ = _db.Spaces.AsNoTracking();
-        var cottagesQ = _db.Cottages.AsNoTracking();
-
-        if (campsiteId is Guid cid && cid != Guid.Empty)
+        if (campsiteId is null || campsiteId == Guid.Empty)
         {
-            spacesQ = spacesQ.Where(s => s.CampsiteId == cid);
-            cottagesQ = cottagesQ.Where(c => c.CampsiteId == cid);
+            return Ok(Array.Empty<UnitDto>());
         }
 
-        var spaces = await spacesQ.Select(s => new UnitDto
-        {
-            Id = s.Id,
-            Name = s.Name,
-            Type = "Space",
-            X = s.X,
-            Y = s.Y
-        }).ToListAsync(ct);
+        var spacesQ = _db.Spaces
+            .Where(s => s.CampsiteId == campsiteId)
+            .Select(s => new UnitDto
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Type = "Space",
+                X = s.X,
+                Y = s.Y,
+                CampsiteId = s.CampsiteId
+            })
+            .AsNoTracking();
 
-        var cottages = await cottagesQ.Select(c => new UnitDto
-        {
-            Id = c.Id,
-            Name = c.Name,
-            Type = "Cottage",
-            X = c.X,
-            Y = c.Y
-        }).ToListAsync(ct);
+        var cottagesQ = _db.Cottages
+            .Where(c => c.CampsiteId == campsiteId)
+            .Select(c => new UnitDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Type = "Cottage",
+                X = c.X,
+                Y = c.Y,
+                CampsiteId = c.CampsiteId
+            })
+            .AsNoTracking();
 
-        var all = spaces.Concat(cottages).OrderBy(x => x.Name).ToList();
+        var result = await spacesQ
+            .Concat(cottagesQ)
+            .OrderBy(u => u.Type)
+            .ThenBy(u => u.Name)
+            .ToListAsync(ct);
+
+        return Ok(result);
+    }
+
+    // -----------------------------------------------
+    // GET api/units/options?campsiteId=...&unplacedOnly=true
+    // Bruges af editoren til dropdown "Placer DB-enhed"
+    // -----------------------------------------------
+    [HttpGet("options")]
+    public async Task<ActionResult<IEnumerable<UnitOptionDto>>> GetUnitOptions(
+        [FromQuery] Guid campsiteId,
+        [FromQuery] bool unplacedOnly = false,
+        CancellationToken ct = default)
+    {
+        if (campsiteId == Guid.Empty)
+            return Ok(Array.Empty<UnitOptionDto>());
+
+        var spacesQ = _db.Spaces
+            .Where(s => s.CampsiteId == campsiteId)
+            .Select(s => new UnitOptionDto
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Type = "Space",
+                HasPosition = s.X != 0 || s.Y != 0,
+                CampsiteId = s.CampsiteId
+            });
+
+        var cottagesQ = _db.Cottages
+            .Where(c => c.CampsiteId == campsiteId)
+            .Select(c => new UnitOptionDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Type = "Cottage",
+                HasPosition = c.X != 0 || c.Y != 0,
+                CampsiteId = c.CampsiteId
+            });
+
+        var all = await spacesQ
+            .Concat(cottagesQ)
+            .OrderBy(u => u.Type)
+            .ThenBy(u => u.Name)
+            .ToListAsync(ct);
+
+        if (unplacedOnly)
+            all = all.Where(u => !u.HasPosition).ToList();
+
         return Ok(all);
     }
 
-    // GET api/units/options?campsiteId=...&unplacedOnly=true
-    [HttpGet("options")]
-    public async Task<ActionResult<IEnumerable<UnitOptionDto>>> GetOptions(
-        [FromQuery] Guid? campsiteId,
-        [FromQuery] bool unplacedOnly,
-        CancellationToken ct)
+    // ----------------------------
+    // PUT api/units/{id}
+    // Bruges hvis du vil opdatere en enkelt enhed (navn, X/Y, osv.)
+    // ----------------------------
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> UpdateUnit(Guid id, [FromBody] UnitDto dto)
     {
-        var spacesQ = _db.Spaces.AsNoTracking();
-        var cottagesQ = _db.Cottages.AsNoTracking();
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
 
-        if (campsiteId is Guid cid && cid != Guid.Empty)
-        {
-            spacesQ = spacesQ.Where(s => s.CampsiteId == cid);
-            cottagesQ = cottagesQ.Where(c => c.CampsiteId == cid);
-        }
+        // Vi finder enten en Space eller Cottage med det id
+        var space = await _db.Spaces.FirstOrDefaultAsync(s => s.Id == id);
+        var cottage = space is null
+            ? await _db.Cottages.FirstOrDefaultAsync(c => c.Id == id)
+            : null;
 
-        var spaces = await spacesQ.Select(s => new UnitOptionDto
-        {
-            Id = s.Id,
-            Name = s.Name,
-            Type = "Space",
-            HasPosition = !(s.X == 0 && s.Y == 0),
-            CampsiteId = s.CampsiteId
-        }).ToListAsync(ct);
+        if (space is null && cottage is null)
+            return NotFound();
 
-        var cottages = await cottagesQ.Select(c => new UnitOptionDto
-        {
-            Id = c.Id,
-            Name = c.Name,
-            Type = "Cottage",
-            HasPosition = !(c.X == 0 && c.Y == 0),
-            CampsiteId = c.CampsiteId
-        }).ToListAsync(ct);
-
-        var all = spaces.Concat(cottages);
-        if (unplacedOnly) all = all.Where(o => !o.HasPosition);
-
-        return Ok(all.OrderBy(o => o.Name).ToList());
-    }
-
-    // PUT api/units/{id}/position
-    [HttpPut("{id:guid}/position")]
-    public async Task<ActionResult> SetPosition(
-        [FromRoute] Guid id,
-        [FromBody] SetPositionDto body,
-        CancellationToken ct)
-    {
-        var space = await _db.Spaces.FirstOrDefaultAsync(s => s.Id == id, ct);
         if (space is not null)
         {
-            space.X = body.X;
-            space.Y = body.Y;
-            await _db.SaveChangesAsync(ct);
-            return NoContent();
+            space.Name = dto.Name;
+            space.X = dto.X;
+            space.Y = dto.Y;
         }
-
-        var cottage = await _db.Cottages.FirstOrDefaultAsync(c => c.Id == id, ct);
-        if (cottage is not null)
+        else if (cottage is not null)
         {
-            cottage.X = body.X;
-            cottage.Y = body.Y;
-            await _db.SaveChangesAsync(ct);
-            return NoContent();
+            cottage.Name = dto.Name;
+            cottage.X = dto.X;
+            cottage.Y = dto.Y;
         }
 
-        return NotFound();
+        await _db.SaveChangesAsync();
+        return NoContent();
     }
 
+    // ---------------------------------------------------
     // PUT api/units/layout?campsiteId=...
+    // Bruges af editoren til at gemme ALLE X/Y-positioner
+    // ---------------------------------------------------
     [HttpPut("layout")]
-    public async Task<ActionResult> SaveLayout(
-        [FromQuery] Guid? campsiteId,
+    public async Task<IActionResult> SaveLayout(
+        [FromQuery] Guid campsiteId,
         [FromBody] List<UnitLayoutDto> layout,
         CancellationToken ct)
     {
+        if (campsiteId == Guid.Empty)
+            return BadRequest("campsiteId is required.");
+
         if (layout is null || layout.Count == 0)
-            return BadRequest("Empty layout");
+            return BadRequest("Layout is empty.");
 
-        var spaceIds = layout.Where(l => l.Type == "Space").Select(l => l.Id).ToHashSet();
-        var cottageIds = layout.Where(l => l.Type == "Cottage").Select(l => l.Id).ToHashSet();
+        // Hent alle spaces og cottages for denne campsite
+        var spaces = await _db.Spaces
+            .Where(s => s.CampsiteId == campsiteId)
+            .ToListAsync(ct);
 
-        var spacesQ = _db.Spaces.Where(s => spaceIds.Contains(s.Id));
-        var cottagesQ = _db.Cottages.Where(c => cottageIds.Contains(c.Id));
+        var cottages = await _db.Cottages
+            .Where(c => c.CampsiteId == campsiteId)
+            .ToListAsync(ct);
 
-        if (campsiteId is Guid cid && cid != Guid.Empty)
-        {
-            spacesQ = spacesQ.Where(s => s.CampsiteId == cid);
-            cottagesQ = cottagesQ.Where(c => c.CampsiteId == cid);
-        }
-
-        var dbSpaces = await spacesQ.ToListAsync(ct);
-        var dbCottages = await cottagesQ.ToListAsync(ct);
-
+        // Opdater X/Y baseret på layout-listen
         foreach (var item in layout)
         {
-            if (item.Type == "Space")
+            if (item.Type.Equals("Space", StringComparison.OrdinalIgnoreCase))
             {
-                var s = dbSpaces.FirstOrDefault(x => x.Id == item.Id);
-                if (s is null) continue;
-                s.X = item.X;
-                s.Y = item.Y;
+                var s = spaces.FirstOrDefault(x => x.Id == item.Id);
+                if (s != null)
+                {
+                    s.X = item.X;
+                    s.Y = item.Y;
+                }
             }
-            else if (item.Type == "Cottage")
+            else if (item.Type.Equals("Cottage", StringComparison.OrdinalIgnoreCase))
             {
-                var c = dbCottages.FirstOrDefault(x => x.Id == item.Id);
-                if (c is null) continue;
-                c.X = item.X;
-                c.Y = item.Y;
+                var c = cottages.FirstOrDefault(x => x.Id == item.Id);
+                if (c != null)
+                {
+                    c.X = item.X;
+                    c.Y = item.Y;
+                }
             }
         }
 
         await _db.SaveChangesAsync(ct);
         return NoContent();
-    }
-
-    // POST api/units/layout/import?campsiteId=...
-    [HttpPost("layout/import")]
-    public async Task<ActionResult> ImportLayout(
-        [FromQuery] Guid? campsiteId,
-        [FromBody] ImportMapRequest body,
-        CancellationToken ct)
-    {
-        try
-        {
-            if (body?.Units == null || body.Units.Count == 0)
-                return BadRequest("No units to import.");
-
-            // Find/brug valgt campsite hvis givet
-            Campsite? campsite = null;
-            if (campsiteId is Guid cid && cid != Guid.Empty)
-            {
-                campsite = await _db.Campsites.FirstOrDefaultAsync(c => c.Id == cid, ct);
-                if (campsite is null)
-                    return NotFound($"Campsite {cid} findes ikke.");
-            }
-            else
-            {
-                // fallback: første eller opret en standard
-                campsite = await _db.Campsites.FirstOrDefaultAsync(ct);
-                if (campsite is null)
-                {
-                    campsite = new Campsite
-                    {
-                        Id = Guid.NewGuid(),
-                        Name = "Standard Campingplads",
-                        Description = "Auto-created by layout import",
-                        Location = "N/A"
-                    };
-                    await _db.Campsites.AddAsync(campsite, ct);
-                    await _db.SaveChangesAsync(ct);
-                }
-            }
-            var attachCid = campsite.Id;
-
-            // Load eksisterende
-            var spaces = await _db.Spaces.ToListAsync(ct);
-            var cottages = await _db.Cottages.ToListAsync(ct);
-
-            static string Key(string? s) => (s ?? string.Empty).Trim().ToLowerInvariant();
-            var spaceById = spaces.ToDictionary(s => s.Id);
-            var cottageById = cottages.ToDictionary(c => c.Id);
-            var spaceByName = spaces.GroupBy(s => Key(s.Name)).ToDictionary(g => g.Key, g => g.First());
-            var cottageByName = cottages.GroupBy(c => Key(c.Name)).ToDictionary(g => g.Key, g => g.First());
-
-            int updated = 0, created = 0, skipped = 0;
-
-            foreach (var u in body.Units)
-            {
-                var type = (u.Type ?? string.Empty).Trim();
-                var isSpace = string.Equals(type, "Space", StringComparison.OrdinalIgnoreCase);
-                var isCottage = string.Equals(type, "Cottage", StringComparison.OrdinalIgnoreCase);
-                if (!isSpace && !isCottage) { skipped++; continue; }
-
-                if (isSpace)
-                {
-                    Space? entity = null;
-
-                    if (u.Id.HasValue && spaceById.TryGetValue(u.Id.Value, out var sById))
-                        entity = sById;
-                    else if (!string.IsNullOrWhiteSpace(u.Name))
-                        spaceByName.TryGetValue(Key(u.Name), out entity);
-
-                    if (entity is null)
-                    {
-                        if (!body.CreateMissing) { skipped++; continue; }
-                        entity = new Space
-                        {
-                            Id = u.Id ?? Guid.NewGuid(),
-                            Name = string.IsNullOrWhiteSpace(u.Name) ? "Plads" : u.Name!,
-                            CampsiteId = attachCid,
-                            X = u.X,
-                            Y = u.Y,
-                            ImageUrl = "",
-                            PricePerNight = 0m
-                        };
-                        _db.Spaces.Add(entity);
-                        created++;
-                    }
-                    else
-                    {
-                        entity.CampsiteId = attachCid; // <- sikre at den hører til valgt plads
-                        entity.X = u.X;
-                        entity.Y = u.Y;
-                        updated++;
-                    }
-                }
-                else // Cottage
-                {
-                    Cottage? entity = null;
-
-                    if (u.Id.HasValue && cottageById.TryGetValue(u.Id.Value, out var cById))
-                        entity = cById;
-                    else if (!string.IsNullOrWhiteSpace(u.Name))
-                        cottageByName.TryGetValue(Key(u.Name), out entity);
-
-                    if (entity is null)
-                    {
-                        if (!body.CreateMissing) { skipped++; continue; }
-                        entity = new Cottage
-                        {
-                            Id = u.Id ?? Guid.NewGuid(),
-                            Name = string.IsNullOrWhiteSpace(u.Name) ? "Hytte" : u.Name!,
-                            CampsiteId = attachCid,
-                            X = u.X,
-                            Y = u.Y,
-                            Description = "N/A",
-                            ImageUrl = ""
-                        };
-                        _db.Cottages.Add(entity);
-                        created++;
-                    }
-                    else
-                    {
-                        entity.CampsiteId = attachCid; // <- sikre at den hører til valgt plads
-                        entity.X = u.X;
-                        entity.Y = u.Y;
-                        updated++;
-                    }
-                }
-            }
-
-            await _db.SaveChangesAsync(ct);
-            return Ok(new { updated, created, skipped });
-        }
-        catch (DbUpdateException ex)
-        {
-            Console.Error.WriteLine(ex);
-            return Problem(ex.InnerException?.Message ?? ex.Message, statusCode: 500);
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine(ex);
-            return Problem(ex.ToString(), statusCode: 500);
-        }
     }
 }
