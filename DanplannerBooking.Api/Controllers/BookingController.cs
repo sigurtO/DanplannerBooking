@@ -2,6 +2,7 @@
 using DanplannerBooking.Application.Interfaces;
 using DanplannerBooking.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace DanplannerBooking.Api.Controllers
 {
@@ -89,5 +90,36 @@ namespace DanplannerBooking.Api.Controllers
             }
             return NoContent();
         }
+
+        [HttpGet("dashboard")]
+        public async Task<ActionResult<IEnumerable<BookingDashboardDto>>> GetDashboardData()
+        {
+            var data = await _bookingRepository.GetDashboardDataAsync();
+            return Ok(data);
+        }
+
+        [HttpGet("arrivals-today")]
+        public async Task<ActionResult<IEnumerable<BookingDashboardDto>>> GetArrivalsToday()
+        {
+            var today = DateTime.Today;
+
+            var data = await _bookingRepository.GetDashboardDataAsync();
+
+            return Ok(data.Where(b => b.DateStart.Date == today));
+        }
+
+        [HttpGet("departures-today")]
+        public async Task<ActionResult<IEnumerable<BookingDashboardDto>>> GetDeparturesToday()
+        {
+            var today = DateTime.Today;
+
+            var data = await _bookingRepository.GetDashboardDataAsync();
+
+            return Ok(data.Where(b => b.DateEnd.Date == today));
+        }
+
+
+
+
     }
 }
