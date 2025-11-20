@@ -26,7 +26,7 @@ namespace DanplannerBooking.Application.Dtos.Space
 
         public bool IsAvailable { get; set; }
         public decimal PricePerNight { get; set; }
-        public string ImageUrl { get; set; }
+        public byte[] Image { get; set; }
     }
 
     public record SpaceResponseDto(
@@ -43,6 +43,6 @@ namespace DanplannerBooking.Application.Dtos.Space
         int? MetersFromOcean,
         bool IsAvailable,
         decimal PricePerNight,
-        string ImageUrl
+        byte[] Image
     );
 }

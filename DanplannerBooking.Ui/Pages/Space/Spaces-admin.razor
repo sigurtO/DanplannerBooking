@@ -43,9 +43,18 @@ else
                         @(space.MetersFromOcean.HasValue ? $"Meters from Ocean {space.MetersFromOcean} m" : "")
                     </td>
                     <td>
-                        @if (!string.IsNullOrWhiteSpace(space.ImageUrl))
+                        @if (space.Image != null && space.Image.Length > 0)
                         {
-                            <img src="@space.ImageUrl" alt="space image" width="100" />
+                            <img class="card-img-top"
+                                 src="@($"data:image/png;base64,{Convert.ToBase64String(space.Image)}")"
+                                 alt="Apartment Image"
+                                 style="height:200px; object-fit:cover;" />
+                        }
+                        else
+                        {
+                            <div class="card-img-top text-center p-5 bg-light text-muted">
+                                No Image
+                            </div>
                         }
                     </td>
                     <td>
@@ -116,8 +125,9 @@ else
         </div>
 
         <div>
-            <label>Image URL:</label>
-            <InputText @bind-Value="editSpace.ImageUrl" class="form-control" />
+            <ImageUpload Label="Cottage Image"
+                         InputId="cottageimage"
+                         OnImageSelected="HandleSpaceImage" />
         </div>
 
         <button type="submit" class="btn btn-success">Save Changes</button>
@@ -160,7 +170,7 @@ else
             MetersFromOcean = space.MetersFromOcean,
             IsAvailable = space.IsAvailable,
             PricePerNight = space.PricePerNight,
-            ImageUrl = space.ImageUrl
+            Image = space.Image
         };
     }
 
@@ -186,7 +196,7 @@ else
                     editSpace.MetersFromOcean,
                     editSpace.IsAvailable,
                     editSpace.PricePerNight,
-                    editSpace.ImageUrl
+                    editSpace.Image
                 );
             }
             editSpace = null;
@@ -196,5 +206,10 @@ else
     private void CancelEdit()
     {
         editSpace = null;
+    }
+
+    private void HandleSpaceImage(byte[] imageBytes)
+    {
+        editSpace.Image = imageBytes;
     }
 }

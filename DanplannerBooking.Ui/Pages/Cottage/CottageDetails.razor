@@ -1,6 +1,7 @@
 ﻿@page "/cottage/{cottageId:guid}"
 @using DanplannerBooking.Application.Dtos.Cottage
 @inject HttpClient Http
+@inject NavigationManager NavigationManager
 
 <h3>Cottage Details</h3>
 
@@ -17,7 +18,7 @@ else
                 {
                     <img class="card-img-top"
                          src="@($"data:image/png;base64,{Convert.ToBase64String(cottage.Image)}")"
-                         alt="Apartment Image"
+                         alt="Cottage Image"
                          style="height:200px; object-fit:cover;" />
                 }
                 else
@@ -42,17 +43,94 @@ else
                         🔥 Heating: @(cottage.HasHeating ? "Yes" : "No")<br />
                         📶 WiFi: @(cottage.HasWiFi ? "Yes" : "No")
                     </p>
+
+                    <!-- User booking -->
                     <button class="btn btn-success" @onclick="NavigateToBooking">Book Now</button>
                     <p class="mt-2 text-muted">Free cancellation up to 48 hours before check-in</p>
+
+                    <!-- Admin actions -->
+                    <div class="mt-3">
+                        <button class="btn btn-warning btn-sm" @onclick="EditCottage">Update</button>
+                        <button class="btn btn-danger btn-sm" @onclick="DeleteCottage">Delete</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 }
 
+@if (editCottage != null)
+{
+    <h4>Edit Cottage</h4>
+    <EditForm Model="@editCottage" OnValidSubmit="HandleUpdate">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div>
+            <label>Name:</label>
+            <InputText @bind-Value="editCottage.Name" class="form-control" />
+        </div>
+
+        <div>
+            <label>Location:</label>
+            <InputText @bind-Value="editCottage.Location" class="form-control" />
+        </div>
+
+        <div>
+            <label>Description:</label>
+            <InputText @bind-Value="editCottage.Description" class="form-control" />
+        </div>
+
+        <div>
+            <label>Price Per Night:</label>
+            <InputNumber @bind-Value="editCottage.PricePerNight" class="form-control" />
+        </div>
+
+        <div class="form-check">
+            <InputCheckbox @bind-Value="editCottage.IsAvailable" class="form-check-input" />
+            <label class="form-check-label">Available</label>
+        </div>
+
+        <div class="form-check">
+            <InputCheckbox @bind-Value="editCottage.HasToilet" class="form-check-input" />
+            <label class="form-check-label">Has Toilet</label>
+        </div>
+
+        <div class="form-check">
+            <InputCheckbox @bind-Value="editCottage.HasShower" class="form-check-input" />
+            <label class="form-check-label">Has Shower</label>
+        </div>
+
+        <div class="form-check">
+            <InputCheckbox @bind-Value="editCottage.HasKitchen" class="form-check-input" />
+            <label class="form-check-label">Has Kitchen</label>
+        </div>
+
+        <div class="form-check">
+            <InputCheckbox @bind-Value="editCottage.HasHeating" class="form-check-input" />
+            <label class="form-check-label">Has Heating</label>
+        </div>
+
+        <div class="form-check">
+            <InputCheckbox @bind-Value="editCottage.HasWiFi" class="form-check-input" />
+            <label class="form-check-label">Has WiFi</label>
+        </div>
+
+        <div>
+            <ImageUpload Label="Cottage Image"
+                         InputId="cottageimage"
+                         OnImageSelected="HandleCottageImage" />
+        </div>
+
+        <button type="submit" class="btn btn-success">Save Changes</button>
+        <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+    </EditForm>
+}
+
 @code {
     [Parameter] public Guid cottageId { get; set; }
     private CottageResponseDto? cottage;
+    private CottageDto? editCottage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -62,5 +140,62 @@ else
     private void NavigateToBooking()
     {
         NavigationManager.NavigateTo($"/book-cottage/{cottageId}");
+    }
+
+    private void EditCottage()
+    {
+        if (cottage == null) return;
+
+        editCottage = new CottageDto
+        {
+            CampsiteId = cottage.CampsiteId,
+            Name = cottage.Name,
+            Location = cottage.Location,
+            Description = cottage.Description,
+            HasToilet = cottage.HasToilet,
+            HasShower = cottage.HasShower,
+            HasKitchen = cottage.HasKitchen,
+            HasHeating = cottage.HasHeating,
+            HasWiFi = cottage.HasWiFi,
+            IsAvailable = cottage.IsAvailable,
+            PricePerNight = cottage.PricePerNight,
+            Image = cottage.Image
+        };
+    }
+
+    private async Task HandleUpdate()
+    {
+        if (editCottage == null) return;
+
+        var response = await Http.PutAsJsonAsync($"api/cottage/{cottageId}", editCottage);
+        if (response.IsSuccessStatusCode)
+        {
+            // Refresh cottage details
+            cottage = await Http.GetFromJsonAsync<CottageResponseDto>($"api/cottage/{cottageId}");
+            editCottage = null;
+        }
+    }
+
+    private async Task DeleteCottage()
+    {
+        var response = await Http.DeleteAsync($"api/cottage/{cottageId}");
+        if (response.IsSuccessStatusCode)
+        {
+            // Show a message 
+            //NavigationManager.NavigateTo("/cottages-admin");
+        }
+    }
+
+    private void CancelEdit()
+    {
+        editCottage = null;
+    }
+
+    private void HandleCottageImage(byte[] imageBytes)
+    {
+        if (editCottage != null)
+        {
+            editCottage.Image = imageBytes;
+        }
     }
 }

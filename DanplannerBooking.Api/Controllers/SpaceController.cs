@@ -50,7 +50,7 @@ namespace DanplannerBooking.Api.Controllers
                 MetersFromOcean = spaceDto.MetersFromOcean,
                 IsAvailable = spaceDto.IsAvailable,
                 PricePerNight = spaceDto.PricePerNight,
-                ImageUrl = spaceDto.ImageUrl
+                Image = spaceDto.Image
             };
 
             await _spaceRepository.CreateAsync(newSpace);
@@ -74,7 +74,7 @@ namespace DanplannerBooking.Api.Controllers
                 MetersFromOcean = updatedDto.MetersFromOcean,
                 IsAvailable = updatedDto.IsAvailable,
                 PricePerNight = updatedDto.PricePerNight,
-                ImageUrl = updatedDto.ImageUrl
+                Image = updatedDto.Image
             };
 
             var result = await _spaceRepository.UpdateAsync(id, updatedSpace);

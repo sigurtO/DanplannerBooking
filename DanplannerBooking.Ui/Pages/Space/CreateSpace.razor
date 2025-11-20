@@ -45,7 +45,7 @@
             </tr>
             <tr>
                 <td><label>Description:</label></td>
-                <td><InputText @bind-Value="newSpace.Description" class="form-control" /></td>
+                <td><InputTextArea @bind-Value="newSpace.Description" class="form-control" /></td>
             </tr>
             <tr>
                 <td><label>Price Per Night:</label></td>
@@ -85,8 +85,9 @@
                 </tr>
             }
             <tr>
-                <td><label>Image URL:</label></td>
-                <td><InputText @bind-Value="newSpace.ImageUrl" class="form-control" /></td>
+                <ImageUpload Label="Space Image"
+                             InputId="spaceimage"
+                             OnImageSelected="HandleSpaceImage" />
             </tr>
         </tbody>
     </table>
@@ -101,14 +102,13 @@
     private string? error;
 
     private CampsiteResponseDto? selectedCampsite =>
-    campsiteOptions.FirstOrDefault(c => c.Id == newSpace.CampsiteId);
-
+        campsiteOptions.FirstOrDefault(c => c.Id == newSpace.CampsiteId);
 
     private async Task HandleValidSubmit()
     {
         error = null;
 
-        if (newSpace.CampsiteId == Guid.Empty) // Validate campsite selection
+        if (newSpace.CampsiteId == Guid.Empty)
         {
             error = "Please select a campsite.";
             return;
@@ -133,5 +133,10 @@
     protected override async Task OnInitializedAsync()
     {
         campsiteOptions = await Http.GetFromJsonAsync<List<CampsiteResponseDto>>("api/campsite");
+    }
+
+    private void HandleSpaceImage(byte[] imageBytes)
+    {
+        newSpace.Image = imageBytes;
     }
 }

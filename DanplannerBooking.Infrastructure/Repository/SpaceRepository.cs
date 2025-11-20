@@ -57,7 +57,7 @@ namespace DanplannerBooking.Infrastructure.Repository
             existingSpace.MetersFromOcean = updatedSpace.MetersFromOcean;
             existingSpace.IsAvailable = updatedSpace.IsAvailable;
             existingSpace.PricePerNight = updatedSpace.PricePerNight;
-            existingSpace.ImageUrl = updatedSpace.ImageUrl;
+            existingSpace.Image = updatedSpace.Image;
 
             await _context.SaveChangesAsync();
             return true;

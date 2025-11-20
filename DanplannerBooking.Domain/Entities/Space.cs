@@ -19,7 +19,7 @@
 
         public bool IsAvailable { get; set; }
         public decimal PricePerNight { get; set; }
-        public string ImageUrl { get; set; }
+        public byte[] Image { get; set; }
     }
 
 
