@@ -132,7 +132,6 @@ namespace DanplannerBooking.Infrastructure.Migrations
                     DateStart = table.Column<DateTime>(type: "datetime2", nullable: false),
                     DateEnd = table.Column<DateTime>(type: "datetime2", nullable: false),
                     TotalPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Discount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     CottageId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     SpaceId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },

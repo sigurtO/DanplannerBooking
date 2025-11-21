@@ -25,6 +25,19 @@ else
                         <DataAnnotationsValidator />
                         <ValidationSummary />
 
+
+                        <div class="mb-3">
+                            <label>Assign Admin:</label>
+                            <InputSelect @bind-Value="newBooking.UserId" class="form-control">
+                                <option value="">-- Select Admin --</option>
+                                @foreach (var admin in adminUsers)
+                                {
+                                    <option value="@admin.Id">@admin.Name (@admin.Email)</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+
                         <div class="mb-3">
                             <label>Check-in Date:</label>
                             <InputDate @bind-Value="newBooking.DateStart" class="form-control" />
@@ -92,6 +105,7 @@ else
 
     private CottageResponseDto? cottage;
     private List<AddOnResponseDto>? addOns;
+    private List<UserResponseDto>? adminUsers;   // <-- add this
     private Dictionary<Guid, bool> addonSelections = new();
     private BookingDto newBooking = new();
     private string? error;
@@ -100,6 +114,7 @@ else
     {
         cottage = await Http.GetFromJsonAsync<CottageResponseDto>($"api/cottage/{cottageId}");
         addOns = await Http.GetFromJsonAsync<List<AddOnResponseDto>>("api/addon");
+        adminUsers = await Http.GetFromJsonAsync<List<UserResponseDto>>("api/user/admin"); // <-- fetch admins
 
         foreach (var addon in addOns)
         {
@@ -113,7 +128,6 @@ else
         newBooking.NumberOfPeople = 2;
         newBooking.UserId = Guid.NewGuid(); // Replace with actual logged-in user ID
         newBooking.TotalPrice = cottage.PricePerNight;
-        newBooking.Discount = 0;
     }
 
     private async Task SubmitBooking()

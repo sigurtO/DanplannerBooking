@@ -62,9 +62,6 @@ namespace DanplannerBooking.Infrastructure.Migrations
                     b.Property<DateTime>("DateStart")
                         .HasColumnType("datetime2");
 
-                    b.Property<decimal>("Discount")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<int>("NumberOfPeople")
                         .HasColumnType("int");
 

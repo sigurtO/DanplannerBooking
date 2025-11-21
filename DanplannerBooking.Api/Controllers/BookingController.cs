@@ -36,7 +36,7 @@ namespace DanplannerBooking.Api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateBooking([FromBody] BookingDto bookingDto)
+        public async Task<IActionResult> CreateBooking([FromBody] BookingCreateCottageDto bookingDto)
         {
             var newBooking = new Booking
             {
@@ -44,8 +44,6 @@ namespace DanplannerBooking.Api.Controllers
                 NumberOfPeople = bookingDto.NumberOfPeople,
                 DateStart = bookingDto.DateStart,
                 DateEnd = bookingDto.DateEnd,
-                TotalPrice = bookingDto.TotalPrice,
-                Discount = bookingDto.Discount,
                 CottageId = bookingDto.CottageId,
                 SpaceId = bookingDto.SpaceId,
                 //BundleId = bookingDto.BundleId
@@ -66,7 +64,6 @@ namespace DanplannerBooking.Api.Controllers
                 DateStart = updatedDto.DateStart,
                 DateEnd = updatedDto.DateEnd,
                 TotalPrice = updatedDto.TotalPrice,
-                Discount = updatedDto.Discount,
                 CottageId = updatedDto.CottageId,
                 SpaceId = updatedDto.SpaceId,
                 //BundleId = updatedDto.BundleId

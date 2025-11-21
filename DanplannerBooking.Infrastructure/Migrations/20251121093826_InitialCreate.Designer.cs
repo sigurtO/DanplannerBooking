@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DanplannerBooking.Infrastructure.Migrations
 {
     [DbContext(typeof(DbContextBooking))]
-    [Migration("20251120113541_InitialCreate")]
+    [Migration("20251121093826_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -64,9 +64,6 @@ namespace DanplannerBooking.Infrastructure.Migrations
 
                     b.Property<DateTime>("DateStart")
                         .HasColumnType("datetime2");
-
-                    b.Property<decimal>("Discount")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("NumberOfPeople")
                         .HasColumnType("int");

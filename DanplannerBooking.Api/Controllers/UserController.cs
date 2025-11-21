@@ -40,6 +40,16 @@ namespace DanplannerBooking.Api.Controllers
             return Ok(user);
         }
 
+        [HttpGet("admin")]
+        public async Task<ActionResult<IEnumerable<UserResponseDto>>> GetAdmins()
+        {
+            var users = await _userRepository.GetAllAsync();
+            var admins = users.Where(u => u.Role == "Admin").ToList();
+
+            return Ok(admins);
+        }
+
+
         //Post api/user
         [HttpPost]
         public async Task<ActionResult> CreateUser([FromBody] CreateUserDto createUserDto)

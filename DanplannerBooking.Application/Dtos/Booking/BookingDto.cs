@@ -20,7 +20,6 @@ namespace DanplannerBooking.Application.Dtos.Booking
         public DateTime DateEnd { get; set; }
 
         public decimal TotalPrice { get; set; }
-        public decimal Discount { get; set; }
 
         public Guid? CottageId { get; set; }
         public CottageResponseDto Cottage { get; set; }
@@ -32,6 +31,19 @@ namespace DanplannerBooking.Application.Dtos.Booking
         //public Bundle Bundle { get; set; }
 
     }
+
+    public class BookingCreateCottageDto
+    {
+        public Guid UserId { get; set; }
+        public int NumberOfPeople { get; set; }
+        public DateTime DateStart { get; set; }
+        public DateTime DateEnd { get; set; }
+
+        public Guid? CottageId { get; set; }
+        public Guid? SpaceId { get; set; }
+
+        public List<Guid>? AddOnIds { get; set; } // optional
+    }
     public record BookingResponseDto(
         Guid Id,
         Guid UserId,
@@ -40,13 +52,14 @@ namespace DanplannerBooking.Application.Dtos.Booking
         DateTime DateStart,
         DateTime DateEnd,
         decimal TotalPrice,
-        decimal Discount,
         Guid? CottageId,
         CottageResponseDto Cottage,
         Guid? SpaceId,
-        SpaceResponseDto Space
-        //Guid? BundleId,
-        //Bundle Bundle
+        SpaceResponseDto Space,
+        List<Guid> AddOnIds
+
+    //Guid? BundleId,
+    //Bundle Bundle
     );
     public record BookingDashboardDto(
         Guid Id,

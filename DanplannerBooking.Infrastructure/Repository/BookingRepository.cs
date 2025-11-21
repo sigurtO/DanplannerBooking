@@ -68,7 +68,6 @@ namespace DanplannerBooking.Infrastructure.Repository
             existingBooking.DateStart = updatedBooking.DateStart;
             existingBooking.DateEnd = updatedBooking.DateEnd;
             existingBooking.TotalPrice = updatedBooking.TotalPrice;
-            existingBooking.Discount = updatedBooking.Discount;
             existingBooking.CottageId = updatedBooking.CottageId;
             existingBooking.SpaceId = updatedBooking.SpaceId;
             //existingBooking.BundleId = updatedBooking.BundleId;
