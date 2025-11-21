@@ -1,4 +1,8 @@
-﻿@page "/"
+﻿@page "/AdminDashboard"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+
+
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 @using DanplannerBooking.Application.Dtos.Booking
@@ -8,21 +12,12 @@
 
 <h3 class="mb-4">Admin Dashboard</h3>
 
-<AuthorizeView>
+<AuthorizeView Roles="Admin">
+
     <Authorized>
         @if (role == null)
         {
             <p>Loader...</p>
-        }
-        else if (role != "Admin")
-        {
-            <div class="alert alert-danger">
-                Du har ikke adgang til denne side.
-            </div>
-
-            <button class="btn btn-primary" @onclick="GoToLogin">
-                Login som administrator
-            </button>
         }
         else
         {
@@ -155,14 +150,13 @@
         var authState = await AuthProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
+        // (valgfrit) du må godt beholde dette hvis du bruger 'role' i dit UI:
         role = user.FindFirst(ClaimTypes.Role)?.Value
             ?? user.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value;
 
-        if (role == "Admin")
-        {
-            arrivals = await Http.GetFromJsonAsync<List<BookingDashboardDto>>("api/booking/arrivals-today");
-            departures = await Http.GetFromJsonAsync<List<BookingDashboardDto>>("api/booking/departures-today");
-        }
+        // Load dashboard data
+        arrivals = await Http.GetFromJsonAsync<List<BookingDashboardDto>>("api/booking/arrivals-today");
+        departures = await Http.GetFromJsonAsync<List<BookingDashboardDto>>("api/booking/departures-today");
     }
 
     private void GoToLogin()
