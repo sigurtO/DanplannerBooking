@@ -1,166 +1,285 @@
-﻿@page "/AdminDashboard"
+﻿@page "/"
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Admin")]
 
+<header>
+  <nav class="navbar" role="navigation" aria-label="Hovednavigation">
+    <p class="brand">Danline</p>
 
-@using Microsoft.AspNetCore.Components.Authorization
-@using System.Security.Claims
-@using DanplannerBooking.Application.Dtos.Booking
-@inject AuthenticationStateProvider AuthProvider
-@inject NavigationManager Nav
-@inject HttpClient Http
+    <ul class="nav-menu">
+      <li class="nav-item"><a class="nav-link" href="#Danplanner">Danplanner</a></li>
+      <li class="nav-item"><a class="nav-link" href="#Danbase">Danbase</a></li>
+      <li class="nav-item"><a class="nav-link" href="#Kundereferancer">KundeReferancer</a></li>
+      <li class="nav-item"><a class="nav-link" href="#kontakt">Kontakt</a></li>
+            <li class="nav-item"><a class="nav-link" href="/AdminDashboard">Login</a></li>
+    </ul>
 
-<h3 class="mb-4">Admin Dashboard</h3>
+    <button class="burger" aria-label="Åben menu" aria-expanded="false" aria-controls="main-nav">
+      <span class="bar"></span>
+      <span class="bar"></span>
+      <span class="bar"></span>
+    </button>
+  </nav>
 
-<AuthorizeView Roles="Admin">
+<style>
+  :root {
+    --header-height: 60px; /* juster efter behov */
+    --nav-bg: #fff;
+    --btn-bg: #656565;
+    --accent: #005795;
+  }
 
-    <Authorized>
-        @if (role == null)
-        {
-            <p>Loader...</p>
-        }
-        else
-        {
-            <!-- TOP STATS -->
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <div class="card shadow-sm p-3 border-0" style="background:#e8f8e8;">
-                        <h5 class="card-title text-success">Ankomster i dag</h5>
-                        <h1 class="text-success fw-bold">@((arrivals?.Count ?? 0))</h1>
-                    </div>
-                </div>
+  /* Header / nav */
+  header { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; }
+  .navbar {
+    height: var(--header-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--nav-bg);
+    padding: 0 1rem;
+  }
+  .brand { color: #f4f4f4; font-size: 1.5rem; margin: 0; }
 
-                <div class="col-md-6">
-                    <div class="card shadow-sm p-3 border-0" style="background:#fdeaea;">
-                        <h5 class="card-title text-danger">Afrejser i dag</h5>
-                        <h1 class="text-danger fw-bold">@((departures?.Count ?? 0))</h1>
-                    </div>
-                </div>
-            </div>
+  /* Desktop menu */
+  .nav-menu {
+    display: flex;
+    gap: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    align-items: center;
+  }
+  .nav-item {}
+  .nav-link {
+    display: inline-block;
+    padding: 0.8rem 1.2rem;
+    text-decoration: none;
+    background: var(--btn-bg);
+    color: #f4f4f4;
+    border-radius: 4px;
+    margin-left: 0.4rem;
+  }
+  .nav-link:hover { background: #454545; }
 
-            <!-- ARRIVALS LIST -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-success text-white">
-                    <h5 class="m-0">Ankomster i dag</h5>
-                </div>
-                <div class="card-body">
-                    @if (arrivals == null)
-                    {
-                        <p>Loader...</p>
-                    }
-                    else if (!arrivals.Any())
-                    {
-                        <p>Ingen ankomster i dag.</p>
-                    }
-                    else
-                    {
-                        <ul class="list-group">
-                            @foreach (var b in arrivals)
-                            {
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>
-                                        <strong>@b.UserName</strong><br />
-                                        <small>Starter: @b.DateStart.ToShortDateString()</small>
-                                    </span>
+  /* Burger (hidden desktop) */
+  .burger {
+    display: none;
+    background: transparent;
+    border: 0;
+    padding: 0.3rem;
+    cursor: pointer;
+  }
+  .burger .bar {
+    display: block;
+    width: 25px;
+    height: 3px;
+    margin: 5px 0;
+    transition: transform 0.3s, opacity 0.3s;
+    background: #f4f4f4;
+  }
+  .burger.active .bar:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+  .burger.active .bar:nth-child(2) { opacity: 0; }
+  .burger.active .bar:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
 
-                                    <span class="badge bg-success">Kommer i dag</span>
-                                </li>
-                            }
-                        </ul>
-                    }
-                </div>
-            </div>
+  /* MOBILE: menu slides down from top */
+  @@media (max-width: 840px) {
+    .burger { display: block; }
 
-            <!-- DEPARTURES LIST -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-danger text-white">
-                    <h5 class="m-0">Afrejser i dag</h5>
-                </div>
-                <div class="card-body">
-                    @if (departures == null)
-                    {
-                        <p>Loader...</p>
-                    }
-                    else if (!departures.Any())
-                    {
-                        <p>Ingen afrejser i dag.</p>
-                    }
-                    else
-                    {
-                        <ul class="list-group">
-                            @foreach (var b in departures)
-                            {
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>
-                                        <strong>@b.UserName</strong><br />
-                                        <small>Slutter: @b.DateEnd.ToShortDateString()</small>
-                                    </span>
-
-                                    <span class="badge bg-danger">Rejser i dag</span>
-                                </li>
-                            }
-                        </ul>
-                    }
-                </div>
-            </div>
-
-            <!-- ADMIN NAVIGATION -->
-            <div class="card shadow-sm p-3">
-                <h5 class="mb-3">Administration</h5>
-
-                <div class="row row-cols-1 row-cols-md-3 g-3">
-                    <div class="col">
-                        <a class="btn btn-outline-primary w-100" href="/users">Brugere</a>
-                    </div>
-                    <div class="col">
-                        <a class="btn btn-outline-primary w-100" href="/spaces-admin">Pladser</a>
-                    </div>
-                    <div class="col">
-                        <a class="btn btn-outline-primary w-100" href="/cottages-admin">Hytter</a>
-                    </div>
-                    <div class="col">
-                        <a class="btn btn-outline-success w-100" href="/create-Space">Opret plads</a>
-                    </div>
-                    <div class="col">
-                        <a class="btn btn-outline-success w-100" href="/create-Cottage">Opret hytte</a>
-                    </div>
-                    <div class="col">
-                        <a class="btn btn-outline-success w-100" href="/create-Addon">Opret tilkøb</a>
-                    </div>
-                </div>
-            </div>
-        }
-    </Authorized>
-
-    <NotAuthorized>
-        <p>Du er ikke logget ind som administrator.</p>
-        <button class="btn btn-primary" @onclick="GoToLogin">Login</button>
-    </NotAuthorized>
-</AuthorizeView>
-
-
-@code {
-    private string? role;
-
-    private List<BookingDashboardDto>? arrivals;
-    private List<BookingDashboardDto>? departures;
-
-    protected override async Task OnInitializedAsync()
-    {
-        var authState = await AuthProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-
-        // (valgfrit) du må godt beholde dette hvis du bruger 'role' i dit UI:
-        role = user.FindFirst(ClaimTypes.Role)?.Value
-            ?? user.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value;
-
-        // Load dashboard data
-        arrivals = await Http.GetFromJsonAsync<List<BookingDashboardDto>>("api/booking/arrivals-today");
-        departures = await Http.GetFromJsonAsync<List<BookingDashboardDto>>("api/booking/departures-today");
+    /* hide desktop inline menu visual (but keep it in DOM for accessibility) */
+    .nav-menu {
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: 0;
+      transform: translateY(-110%);
+      transition: transform 0.35s ease-in-out;
+      flex-direction: column;
+      padding-top: calc(var(--header-height) + 12px);
+      gap: 12px;
+      background: var(--btn-bg);
+      z-index: 999;
     }
 
-    private void GoToLogin()
-    {
-        Nav.NavigateTo("/login");
+    /* menu visible -> slide down to just under header */
+    .nav-menu.active {
+      transform: translateY(var(--header-height));
     }
+
+    .nav-link {
+      width: 100%;
+      padding: 1rem 0;
+      border-radius: 0;
+      margin: 0;
+    }
+  }
+
+  /* Give page content breathing room under fixed header */
+  main { padding-top: calc(var(--header-height) + 1rem); }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const hamburger = document.querySelector(".burger");
+    const navMenu = document.querySelector(".nav-menu");
+    const navLinks = document.querySelectorAll(".nav-link");
+    const header = document.querySelector("header");
+
+    if (!hamburger || !navMenu) return; // safety
+
+    // Toggle burger/menu
+    hamburger.addEventListener("click", () => {
+      const expanded = hamburger.classList.toggle("active");
+      navMenu.classList.toggle("active");
+      hamburger.setAttribute("aria-expanded", expanded ? "true" : "false");
+    });
+
+    // When clicking a nav link: smooth scroll with header offset and close menu
+    navLinks.forEach(link => {
+      link.addEventListener("click", (e) => {
+        // If the href is an anchor on the same page
+        const href = link.getAttribute("href");
+        if (href && href.startsWith("#")) {
+          e.preventDefault();
+          const target = document.querySelector(href);
+          if (target) {
+            // compute offset considering header height (in case header height changes with CSS)
+            const headerRect = header.getBoundingClientRect();
+            const headerHeight = headerRect.height;
+            // top relative to document
+            const targetY = target.getBoundingClientRect().top + window.pageYOffset;
+            const scrollTo = targetY - headerHeight - 8; // -8px little breathing space
+
+            window.scrollTo({ top: scrollTo, behavior: "smooth" });
+          }
+        }
+        // close mobile menu (if open)
+        hamburger.classList.remove("active");
+        navMenu.classList.remove("active");
+        hamburger.setAttribute("aria-expanded", "false");
+      });
+    });
+
+    // Optional: close menu when clicking outside
+    document.addEventListener("click", (e) => {
+      if (!navMenu.classList.contains("active")) return;
+      const withinNav = e.target.closest(".navbar");
+      if (!withinNav) {
+        navMenu.classList.remove("active");
+        hamburger.classList.remove("active");
+        hamburger.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    // Optional: handle Escape key to close menu
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && navMenu.classList.contains("active")) {
+        navMenu.classList.remove("active");
+        hamburger.classList.remove("active");
+        hamburger.setAttribute("aria-expanded", "false");
+      }
+    });
+  });
+</script>
+</header>
+<main class="booking-main">
+
+  <section class="hero">
+    <h1>Book din campingplads</h1>
+    <p>Vælg mellem over 50 campingpladser i hele Danmark</p>
+  </section>
+
+  <!-- Filtrering -->
+  <section class="filters">
+    <label>Område:</label>
+    <select>
+      <option>Alle</option>
+      <option>Jylland</option>
+      <option>Fyn</option>
+      <option>Sjælland</option>
+    </select>
+
+    <label>Antal personer:</label>
+    <input type="number" min="1" max="10" placeholder="Fx 4">
+
+    <label>Ankomst:</label>
+    <input type="date">
+
+    <label>Afrejse:</label>
+    <input type="date">
+
+    <button>Søg</button>
+  </section>
+
+  <!-- Campingliste -->
+  <section class="camping-list">
+
+    <div class="camp-card">
+      <img src="https://picsum.photos/400/200" alt="Campingplads">
+      <h3>Vejers Strand Camping</h3>
+      <p>📍 Vestjylland</p>
+      <p>💰 250 kr pr. nat</p>
+      <button>Book nu</button>
+    </div>
+
+    <div class="camp-card">
+      <img src="https://picsum.photos/401/200" alt="Campingplads">
+      <h3>Gudhjem Camping</h3>
+      <p>📍 Bornholm</p>
+      <p>💰 275 kr pr. nat</p>
+      <button>Book nu</button>
+    </div>
+
+    <div class="camp-card">
+      <img src="https://picsum.photos/402/200" alt="Campingplads">
+      <h3>Marielyst Strand Camping</h3>
+      <p>📍 Sjælland</p>
+      <p>💰 300 kr pr. nat</p>
+      <button>Book nu</button>
+    </div>
+
+  </section>
+
+</main>
+<footer> <div class="gridcontainer">
+<div class="f1"><h4>Danline Innovation A/S</h4>
+<p>Lumbyesvej 29</p>
+<p>7000 Fredericia</p>
+<p>CVR: 25831152</p>
+</div>
+<div class="f2"><h4>Kontakt</h4>
+<p>mads@danline.dk</p>
+<p>+45 76 20 60 40</p>
+<p>Handelsbetingelser</p>
+</div>
+<div class="f3"><img src="" alt="">
+<h4>Brands</h4>
+<p>Danplanner</p>
+<p>Danbase</p>
+</div>
+<div class="f4">
+<h4>Sociale medier</h4>
+<p>Facebook</p>
+<p>Linkedin</p>
+</div></div>
+</footer>
+<style>
+    .gridcontainer {
+  display: grid;
+  grid-template-columns: repeat(4 1fr);
+  grid-template-rows: auto;
+  background-color: #f4f4f4;
 }
+.f1{
+ grid-area: 1/1/2/2 ;
+}
+.f2{
+grid-area:1/2/2/3 ;
+}
+.f3{
+grid-area:1/3/2/4 ;
+}
+.f4{
+   grid-area:1/4/2/5 ; 
+}
+</style>
