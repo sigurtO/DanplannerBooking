@@ -51,8 +51,8 @@
 
         // Redirect based on role
         if (result.Role == "Admin")
-            Nav.NavigateTo("/");
-        //else
-           // Nav.NavigateTo("/booking");
+            Nav.NavigateTo("/AdminDashboard");
+        else
+            Nav.NavigateTo("/booking");   // booking side kommer senere
     }
 }

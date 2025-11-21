@@ -3,9 +3,22 @@
 <CascadingAuthenticationState>
     <Router AppAssembly="@typeof(App).Assembly">
         <Found Context="routeData">
-            <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+                <NotAuthorized>
+                    @* Hvis ikke logget ind → redirect *@
+                    @if (!(context.User.Identity?.IsAuthenticated ?? false))
+                    {
+                        <RedirectToLoginInline />
+                    }
+                    else
+                    {
+                        <p>Du har ikke adgang til denne side.</p>
+                    }
+                </NotAuthorized>
+            </AuthorizeRouteView>
             <FocusOnNavigate RouteData="@routeData" Selector="h1" />
         </Found>
+
         <NotFound>
             <PageTitle>Not found</PageTitle>
             <LayoutView Layout="@typeof(MainLayout)">
@@ -14,3 +27,15 @@
         </NotFound>
     </Router>
 </CascadingAuthenticationState>
+
+@code {
+    public class RedirectToLoginInline : ComponentBase
+    {
+        [Inject] NavigationManager Nav { get; set; } = default!;
+
+        protected override void OnInitialized()
+        {
+            Nav.NavigateTo("/login", forceLoad: true);
+        }
+    }
+}
