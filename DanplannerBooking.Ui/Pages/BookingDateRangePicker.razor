@@ -1,0 +1,24 @@
+﻿<MudDateRangePicker @bind-DateRange="SelectedRange"
+                    DayClassFunc="GetDayClass"
+                    PickerVariant="PickerVariant.Static"
+                    Variant="Variant.Outlined"
+                    Class="w-100" />
+
+@code {
+    [Parameter] public DateRange SelectedRange { get; set; }
+    [Parameter] public EventCallback<DateRange> SelectedRangeChanged { get; set; }
+
+    [Parameter] public List<BookingRangeDto> UnavailableRanges { get; set; } = new();
+
+    private string GetDayClass(DateTime date)
+    {
+        foreach (var range in UnavailableRanges)
+        {
+            if (date.Date >= range.Start.Date && date.Date <= range.End.Date)
+                return "mud-unavailable-day";
+        }
+        return null; // null is safer than empty string
+    }
+
+
+}

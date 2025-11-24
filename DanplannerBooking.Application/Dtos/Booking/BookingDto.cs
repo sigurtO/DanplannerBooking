@@ -67,4 +67,10 @@ namespace DanplannerBooking.Application.Dtos.Booking
         DateTime DateStart,
         DateTime DateEnd
     );
+    public class BookingRangeDto
+    {
+        public DateTime Start { get; set; }
+        public DateTime End { get; set; }
+    }
+
 }

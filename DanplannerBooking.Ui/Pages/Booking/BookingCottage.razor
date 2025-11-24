@@ -36,18 +36,11 @@ else
                                 }
                             </InputSelect>
                         </div>
+                        <p>Unavailable ranges: @unavailableRanges.Count</p>
 
-                        <div class="mb-3">
-                            <label>Booking Dates:</label>
-                            <MudProvider>
-                                <MudPopoverProvider />
-                                <MudThemeProvider IsDarkMode="false" />
-                                <MudDateRangePicker @bind-DateRange="BookingRange"
-                                                    PickerVariant="PickerVariant.Static"
-                                                    Variant="Variant.Outlined"
-                                                    Class="w-100" />
-                            </MudProvider>
-                        </div>
+
+                        <BookingDateRangePicker @bind-SelectedRange="BookingRange"
+                                                UnavailableRanges="unavailableRanges" />    
 
                         <div class="mb-3">
                             <label>Number of People:</label>
@@ -109,24 +102,29 @@ else
     private List<UserResponseDto>? adminUsers;
     private Dictionary<Guid, bool> addonSelections = new();
     private BookingDto newBooking = new();
-    private string? error;
+    private List<BookingRangeDto> unavailableRanges = new(); private string? error;
 
     // Property wrapper for DateRange → maps directly to newBooking
+
     private DateRange BookingRange
     {
         get => new DateRange(newBooking.DateStart, newBooking.DateEnd);
         set
         {
             newBooking.DateStart = value.Start ?? DateTime.Today;
-            newBooking.DateEnd   = value.End   ?? DateTime.Today;
+            newBooking.DateEnd = value.End ?? DateTime.Today;
         }
     }
+
 
     protected override async Task OnInitializedAsync()
     {
         cottage = await Http.GetFromJsonAsync<CottageResponseDto>($"api/cottage/{cottageId}");
         addOns = await Http.GetFromJsonAsync<List<AddOnResponseDto>>("api/addon");
         adminUsers = await Http.GetFromJsonAsync<List<UserResponseDto>>("api/user/admin");
+
+        unavailableRanges = await Http.GetFromJsonAsync<List<BookingRangeDto>>($"api/booking/unavailable/{cottageId}");
+
 
         foreach (var addon in addOns)
         {

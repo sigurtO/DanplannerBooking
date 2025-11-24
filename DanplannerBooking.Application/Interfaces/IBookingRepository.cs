@@ -17,5 +17,7 @@ namespace DanplannerBooking.Application.Interfaces
         Task<bool> DeleteAsync(Guid id);
         Task<List<BookingDashboardDto>> GetDashboardDataAsync();
 
+        Task<List<BookingRangeDto>> GetBookedDateRangesForCottageAsync(Guid cottageId);
+
     }
 }

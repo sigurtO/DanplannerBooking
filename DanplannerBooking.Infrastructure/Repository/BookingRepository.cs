@@ -88,6 +88,20 @@ namespace DanplannerBooking.Infrastructure.Repository
                 .ToListAsync();
         }
 
+        public async Task<List<BookingRangeDto>> GetBookedDateRangesForCottageAsync(Guid cottageId)
+        {
+            return await _context.Bookings
+                .Where(b => b.CottageId == cottageId)
+                .Select(b => new BookingRangeDto
+                {
+                    Start = b.DateStart.Date,
+                    End = b.DateEnd.Date
+                })
+                .ToListAsync();
+        }
+
+
+
     }
 
 }
