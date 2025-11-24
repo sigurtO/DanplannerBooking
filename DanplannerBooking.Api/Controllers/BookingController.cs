@@ -186,5 +186,19 @@ namespace DanplannerBooking.Api.Controllers
 
             return Ok(data.Where(b => b.DateEnd.Date == today));
         }
+
+
+        [HttpGet("unavailable/{cottageId}")]
+        public async Task<IActionResult> GetUnavailableDates(Guid cottageId)
+        {
+            var ranges = await _bookingRepository.GetBookedDateRangesForCottageAsync(cottageId);
+            return Ok(ranges);
+        }
+
+
+
+
+
+
     }
 }
