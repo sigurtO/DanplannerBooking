@@ -194,7 +194,7 @@
                     @if (Selected.Type == "Cottage")
                     {
                         <div class="mt-2">
-                            <button class="primary" @onclick="@(() => GoToBooking(Selected!.Id))">
+                            <button class="primary" @onclick="@(() => GoToCottageDetails(Selected!.Id))">
                                 Book nu
                             </button>
                         </div>
@@ -317,7 +317,7 @@ else
         }
         catch
         {
-            // Hvis noget fejler, lader vi bare felterne være tomme
+            // bare lad være tomt ved fejl
         }
         finally
         {
@@ -335,9 +335,9 @@ else
         IsLoadingDetails = false;
     }
 
-    private void GoToBooking(Guid cottageId)
+    private void GoToCottageDetails(Guid cottageId)
     {
-        // matcher @page "/book-cottage/{cottageId:guid}"
-        NavigationManager.NavigateTo($"/book-cottage/{cottageId}");
+        // Matcher CottageDetails.razor: @page "/cottage/{cottageId:guid}"
+        NavigationManager.NavigateTo($"/cottage/{cottageId}");
     }
 }
