@@ -98,19 +98,6 @@ a, .btn-link {
         content: var(--blazor-load-percentage-text, "Loading");
     }
 
-/* Base unavailable day */
-.mud-picker-calendar-day.mud-unavailable-day {
-    background-color: rgba(255, 0, 0, 0.3) !important;
-}
-
-    .mud-picker-calendar-day.mud-unavailable-day.mud-selected {
-        background-color: rgba(255, 0, 0, 0.6) !important;
-        color: white !important;
-    }
-
-    .mud-picker-calendar-day.mud-unavailable-day.mud-range-between {
-        background-color: rgba(255, 0, 0, 0.4) !important;
-    }
 
 
 
@@ -193,3 +180,17 @@ code {
         .map-infocard .primary:hover {
             filter: brightness(1.05);
         }
+
+/* Unavailable (bookede) dage i MudBlazor DateRangePicker */
+.mud-picker-calendar-day.mud-unavailable-day {
+    background-color: rgba(255, 0, 0, 0.3) !important;
+}
+
+    .mud-picker-calendar-day.mud-unavailable-day.mud-selected {
+        background-color: rgba(255, 0, 0, 0.6) !important;
+        color: white !important;
+    }
+
+    .mud-picker-calendar-day.mud-unavailable-day.mud-range-between {
+        background-color: rgba(255, 0, 0, 0.4) !important;
+    }

@@ -36,13 +36,13 @@ else
                                 }
                             </InputSelect>
                         </div>
+
                         <p>Unavailable ranges: @unavailableRanges.Count</p>
 
-
                         <BookingDateRangePicker @bind-SelectedRange="BookingRange"
-                                                UnavailableRanges="unavailableRanges" />    
+                                                UnavailableRanges="unavailableRanges" />
 
-                        <div class="mb-3">
+                        <div class="mb-3 mt-3">
                             <label>Number of People:</label>
                             <InputNumber @bind-Value="newBooking.NumberOfPeople" class="form-control" />
                         </div>
@@ -88,6 +88,11 @@ else
                         }
                     </ul>
                     <p><strong>Total Price:</strong> @newBooking.TotalPrice.ToString("C")</p>
+
+                    @if (!string.IsNullOrWhiteSpace(error))
+                    {
+                        <p class="text-danger">@error</p>
+                    }
                 </div>
             </div>
         </div>
@@ -102,29 +107,27 @@ else
     private List<UserResponseDto>? adminUsers;
     private Dictionary<Guid, bool> addonSelections = new();
     private BookingDto newBooking = new();
-    private List<BookingRangeDto> unavailableRanges = new(); private string? error;
+    private List<BookingRangeDto> unavailableRanges = new();
+    private string? error;
 
-    // Property wrapper for DateRange → maps directly to newBooking
-
+    // Wrapper omkring DateRange → binder direkte til newBooking
     private DateRange BookingRange
     {
         get => new DateRange(newBooking.DateStart, newBooking.DateEnd);
         set
         {
+            // DET HER BLIVER KALDT, når child-komponenten sender ændringer op
             newBooking.DateStart = value.Start ?? DateTime.Today;
             newBooking.DateEnd = value.End ?? DateTime.Today;
         }
     }
-
 
     protected override async Task OnInitializedAsync()
     {
         cottage = await Http.GetFromJsonAsync<CottageResponseDto>($"api/cottage/{cottageId}");
         addOns = await Http.GetFromJsonAsync<List<AddOnResponseDto>>("api/addon");
         adminUsers = await Http.GetFromJsonAsync<List<UserResponseDto>>("api/user/admin");
-
         unavailableRanges = await Http.GetFromJsonAsync<List<BookingRangeDto>>($"api/booking/unavailable/{cottageId}");
-
 
         foreach (var addon in addOns)
         {
@@ -135,7 +138,7 @@ else
         newBooking.DateStart = DateTime.Today;
         newBooking.DateEnd = DateTime.Today.AddDays(7);
         newBooking.NumberOfPeople = 2;
-        newBooking.UserId = Guid.NewGuid(); // Replace with actual logged-in user ID
+        newBooking.UserId = Guid.NewGuid(); // TODO: rigtig bruger
         newBooking.TotalPrice = cottage.PricePerNight;
     }
 

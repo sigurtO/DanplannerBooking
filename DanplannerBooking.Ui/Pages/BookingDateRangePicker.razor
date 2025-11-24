@@ -1,24 +1,43 @@
-﻿<MudDateRangePicker @bind-DateRange="SelectedRange"
-                    DayClassFunc="GetDayClass"
+﻿@using MudBlazor
+@using DanplannerBooking.Application.Dtos.Booking
+
+<MudDateRangePicker DateRange="SelectedRange"
+                    DateRangeChanged="OnDateRangeChanged"
+                    AdditionalDateClassesFunc="GetDayClass"
                     PickerVariant="PickerVariant.Static"
                     Variant="Variant.Outlined"
                     Class="w-100" />
 
 @code {
+    // Binder til parent via: @bind-SelectedRange i BookingCottage
     [Parameter] public DateRange SelectedRange { get; set; }
     [Parameter] public EventCallback<DateRange> SelectedRangeChanged { get; set; }
 
+    // Listen af bookede perioder, der skal farves røde
     [Parameter] public List<BookingRangeDto> UnavailableRanges { get; set; } = new();
 
+    // KALDES når brugeren vælger datoer i MudDateRangePicker
+    private async Task OnDateRangeChanged(DateRange range)
+    {
+        SelectedRange = range;
+
+        // Det HER var det, der manglede før:
+        // Nu kalder vi SelectedRangeChanged, så BookingRange-setteren i parent kører
+        await SelectedRangeChanged.InvokeAsync(range);
+    }
+
+    // Her sætter vi CSS-klasser for "unavailable" dage
     private string GetDayClass(DateTime date)
     {
+        if (UnavailableRanges == null || UnavailableRanges.Count == 0)
+            return null;
+
         foreach (var range in UnavailableRanges)
         {
             if (date.Date >= range.Start.Date && date.Date <= range.End.Date)
                 return "mud-unavailable-day";
         }
-        return null; // null is safer than empty string
+
+        return null;
     }
-
-
 }
