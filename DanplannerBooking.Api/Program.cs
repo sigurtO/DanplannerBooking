@@ -1,24 +1,25 @@
 using DanplannerBooking.Application.Interfaces;
 using DanplannerBooking.Infrastructure.Context;
 using DanplannerBooking.Infrastructure.Repository;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-    
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
-
-
+// --------------------
+// Services
+// --------------------
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddDbContext<DbContextBooking>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// DbContext
+builder.Services.AddDbContext<DbContextBooking>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICampsiteRepository, CampsiteRepository>();
 builder.Services.AddScoped<ISpaceRepository, SpaceRepository>();
@@ -26,10 +27,17 @@ builder.Services.AddScoped<ICottageRepository, CottageRepository>();
 builder.Services.AddScoped<IAddOnRepository, AddOnRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 
+// --------------------
+// Auth + JWT
+// --------------------
+builder.Services.AddAuthorization(options =>
+{
+    // Politik hvis du vil bruge [Authorize(Policy = "AdminOnly")]
+    options.AddPolicy("AdminOnly", p => p.RequireClaim("IsAdmin", "true"));
+});
 
-builder.Services.AddAuthorization();
 var jwt = builder.Configuration.GetSection("Jwt");
-var key = Encoding.UTF8.GetBytes(jwt["Key"]);
+var key = Encoding.UTF8.GetBytes(jwt["Key"]!);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -52,15 +60,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-
-// CORS for Blazor WASM (development)
-builder.Services.AddCors(options =>
+// --------------------
+// CORS: allow UI origins
+// --------------------
+var allowedOrigins = new[]
 {
-    options.AddPolicy("WasmDev", policy =>
-        policy.WithOrigins(
-            "https://localhost:7090",   //  DIN UI HTTPS PORT
-            "http://localhost:7090"     //  UI kan også starte på HTTP ved debugging
-        )
+    "https://localhost:7090", // UI via Visual Studio (HTTPS)
+    "http://localhost:7090",  // UI på HTTP
+    "http://localhost:5145"   // evt. ekstra HTTP-profil
+};
+
+builder.Services.AddCors(opt =>
+{
+    opt.AddPolicy("Dev", p => p
+        .WithOrigins(allowedOrigins)
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials());
@@ -68,18 +81,21 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// --------------------
+// Middleware pipeline
+// --------------------
 if (app.Environment.IsDevelopment())
 {
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
 
-app.UseCors("WasmDev");
-app.UseAuthentication();
+app.UseCors("Dev");
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

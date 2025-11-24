@@ -1,14 +1,23 @@
 ﻿namespace DanplannerBooking.Domain.Entities
 {
-    public class Space //add name to space GODDAMNIT
+    public class Space
     {
         public Guid Id { get; set; }
         public Guid CampsiteId { get; set; }
-        public Campsite Campsite { get; set; }
 
-        public string Name { get; set; } // new
-        public string Location { get; set; } // new
-        public string Description { get; set; } // new
+        // Name already existed — keep HEAD version
+        public string Name { get; set; } = default!;
+
+        public Campsite Campsite { get; set; } = default!;
+
+        // Layout coordinates
+        public int X { get; set; }  // default 0
+        public int Y { get; set; }  // default 0
+
+        // Metadata
+        public string? Location { get; set; }   // optional
+        public string? Description { get; set; } // optional
+
         public bool HasElectricity { get; set; }
         public int MetersFromToilet { get; set; }
 
@@ -19,11 +28,7 @@
 
         public bool IsAvailable { get; set; }
         public decimal PricePerNight { get; set; }
-        public byte[] Image { get; set; }
+
+        public byte[] Image { get; set; } = Array.Empty<byte>();
     }
-
-
-
-
-
 }

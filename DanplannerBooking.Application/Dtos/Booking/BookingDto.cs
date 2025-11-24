@@ -2,18 +2,12 @@
 using DanplannerBooking.Application.Dtos.Space;
 using DanplannerBooking.Application.Dtos.User;
 using DanplannerBooking.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DanplannerBooking.Application.Dtos.Booking
 {
     public class BookingDto
     {
         public Guid UserId { get; set; }
-        public UserResponseDto User { get; set; }
 
         public int NumberOfPeople { get; set; }
         public DateTime DateStart { get; set; }
@@ -22,14 +16,14 @@ namespace DanplannerBooking.Application.Dtos.Booking
         public decimal TotalPrice { get; set; }
 
         public Guid? CottageId { get; set; }
-        public CottageResponseDto Cottage { get; set; }
-
         public Guid? SpaceId { get; set; }
-        public SpaceResponseDto Space { get; set; }
 
-        //public Guid? BundleId { get; set; }
-        //public Bundle Bundle { get; set; }
-
+        // VIGTIGT: ingen navigation properties her!
+        // public UserResponseDto User { get; set; }
+        // public CottageResponseDto Cottage { get; set; }
+        // public SpaceResponseDto Space { get; set; }
+        // public Guid? BundleId { get; set; }
+        // public Bundle Bundle { get; set; }
     }
 
     public class BookingCreateCottageDto
@@ -44,6 +38,8 @@ namespace DanplannerBooking.Application.Dtos.Booking
 
         public List<Guid>? AddOnIds { get; set; } // optional
     }
+
+    // READ DTO
     public record BookingResponseDto(
         Guid Id,
         Guid UserId,
@@ -57,10 +53,10 @@ namespace DanplannerBooking.Application.Dtos.Booking
         Guid? SpaceId,
         SpaceResponseDto Space,
         List<Guid> AddOnIds
-
-    //Guid? BundleId,
-    //Bundle Bundle
+    // Guid? BundleId,
+    // Bundle Bundle
     );
+
     public record BookingDashboardDto(
         Guid Id,
         string UserName,
