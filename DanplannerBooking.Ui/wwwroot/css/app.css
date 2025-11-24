@@ -100,19 +100,18 @@ a, .btn-link {
 
 /* Base unavailable day */
 .mud-picker-calendar-day.mud-unavailable-day {
-    background-color: rgba(255, 0, 0, 0.3);
+    background-color: rgba(255, 0, 0, 0.3) !important;
 }
 
-    /* If unavailable AND selected */
     .mud-picker-calendar-day.mud-unavailable-day.mud-selected {
-        background-color: rgba(255, 0, 0, 0.6);
-        color: white;
+        background-color: rgba(255, 0, 0, 0.6) !important;
+        color: white !important;
     }
 
-    /* If unavailable AND in range */
     .mud-picker-calendar-day.mud-unavailable-day.mud-range-between {
-        background-color: rgba(255, 0, 0, 0.4);
+        background-color: rgba(255, 0, 0, 0.4) !important;
     }
+
 
 
 code {
