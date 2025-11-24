@@ -36,33 +36,39 @@ namespace DanplannerBooking.Infrastructure.Context
 
             // --- Space required columns ---
             modelBuilder.Entity<Space>()
-                .Property(s => s.ImageUrl).HasDefaultValue("");
-            modelBuilder.Entity<Space>()
-                .Property(s => s.PricePerNight).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+                .Property(s => s.PricePerNight)
+                .HasColumnType("decimal(18,2)")
+                .HasDefaultValue(0m);
 
             // --- Cottage required columns ---
             modelBuilder.Entity<Cottage>()
                 .Property(c => c.Description).HasDefaultValue("");
             modelBuilder.Entity<Cottage>()
-                .Property(c => c.ImageUrl).HasDefaultValue("");
-            modelBuilder.Entity<Cottage>()
                 .Property(c => c.Location).HasDefaultValue("N/A");
             modelBuilder.Entity<Cottage>()
-                .Property(c => c.PricePerNight).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+                .Property(c => c.PricePerNight)
+                .HasColumnType("decimal(18,2)")
+                .HasDefaultValue(0m);
 
             // --- Other decimals ---
             modelBuilder.Entity<AddOn>()
-                .Property(a => a.Price).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+                .Property(a => a.Price)
+                .HasColumnType("decimal(18,2)")
+                .HasDefaultValue(0m);
 
             modelBuilder.Entity<Booking>()
-                .Property(b => b.Discount).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
-            modelBuilder.Entity<Booking>()
-                .Property(b => b.TotalPrice).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+                .Property(b => b.TotalPrice)
+                .HasColumnType("decimal(18,2)")
+                .HasDefaultValue(0m);
 
             modelBuilder.Entity<Bundle>()
-                .Property(b => b.BasePrice).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+                .Property(b => b.BasePrice)
+                .HasColumnType("decimal(18,2)")
+                .HasDefaultValue(0m);
             modelBuilder.Entity<Bundle>()
-                .Property(b => b.Discount).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+                .Property(b => b.Discount)
+                .HasColumnType("decimal(18,2)")
+                .HasDefaultValue(0m);
 
             // ---- Relationships ----
 
