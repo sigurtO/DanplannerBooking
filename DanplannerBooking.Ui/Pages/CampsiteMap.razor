@@ -33,13 +33,13 @@
     <div class="mb-3">
         <div class="card p-2" style="max-width:480px;">
             <div style="display:flex; gap:10px;">
-                <img src="@BgImageUrl"
+                <img src="@BgImageBase64"
                      alt="Campsite image"
                      style="width:140px; height:90px; object-fit:cover; border-radius:8px;" />
                 <div>
                     <div class="fw-bold">@SelectedCampsite.Name</div>
                     <div class="text-muted" style="font-size:.9rem;">Viser @Units.Count enheder</div>
-                    <div style="font-size:.85rem;"><code>@BgImageUrl</code></div>
+                    <div style="font-size:.85rem;"><code>@BgImageBase64</code></div>
                 </div>
             </div>
         </div>
@@ -47,7 +47,7 @@
 
     <div id="mapContainer" class="map-shell" style="border:1px solid #bbb; border-radius:10px; overflow:hidden; width:100%; height:75vh;">
         <svg id="campsiteSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1336 768" style="width:100%; height:100%;">
-            <image href="@BgImageUrl" x="0" y="0" width="1336" height="768" />
+            <image href="@BgImageBase64" x="0" y="0" width="1336" height="768" />
 
             @foreach (var u in Units)
             {
@@ -211,7 +211,7 @@ else
 
 @code {
     public record UnitVm(Guid Id, string Name, string Type, int X, int Y);
-    public record CampsiteVm(string Id, string Name, string ImageUrl);
+    public record CampsiteVm(string Id, string Name, byte[]? Image);
 
     private List<CampsiteVm> Campsites = new();
     private string? SelectedCampsiteId;
@@ -219,10 +219,10 @@ else
     private CampsiteVm? SelectedCampsite =>
         Campsites.FirstOrDefault(c => c.Id == SelectedCampsiteId);
 
-    private string BgImageUrl =>
-        string.IsNullOrWhiteSpace(SelectedCampsite?.ImageUrl)
-            ? "images/campsite.jpg"
-            : SelectedCampsite!.ImageUrl;
+    private string BgImageBase64 =>
+        SelectedCampsite?.Image != null && SelectedCampsite.Image.Length > 0
+            ? $"data:image/png;base64,{Convert.ToBase64String(SelectedCampsite.Image)}"
+            : "images/campsite.jpg";
 
     private List<UnitVm> Units = new();
     private UnitVm? Selected;
@@ -252,14 +252,14 @@ else
     {
         try
         {
-            var data = await Http.GetFromJsonAsync<List<CampsiteDto>>("api/campsites")
-                       ?? new List<CampsiteDto>();
+            var data = await Http.GetFromJsonAsync<List<CampsiteResponseDto>>("api/campsites")
+                       ?? new List<CampsiteResponseDto>();
 
             Campsites = data
                 .Select(c => new CampsiteVm(
                     c.Id.ToString(),
                     c.Name,
-                    string.IsNullOrWhiteSpace(c.ImageUrl) ? "images/campsite.jpg" : c.ImageUrl))
+                    c.Image)) // assuming your DTO now exposes byte[] Image
                 .ToList();
         }
         catch

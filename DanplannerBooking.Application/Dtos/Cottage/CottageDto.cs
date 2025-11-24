@@ -9,7 +9,7 @@ namespace DanplannerBooking.Application.Dtos.Cottage
         [Required]
         public Guid CampsiteId { get; set; }
 
-        public CampsiteDto? Campsite { get; set; } // Navigation property
+        public CampsiteResponseDto? Campsite { get; set; } // Navigation property
 
         [Required]
         [StringLength(100)]

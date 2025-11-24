@@ -88,6 +88,13 @@ else
             <label class="form-check-label">Car Charger</label>
         </div>
 
+        <tr>
+            <ImageUpload Label="Campsite Image"
+                         InputId="campsiteimage"
+                         OnImageSelected="HandleCampsiteImage" />
+
+        </tr>
+
         <button type="submit" class="btn btn-success">Save Changes</button>
         <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
     </EditForm>
@@ -143,7 +150,8 @@ else
                     editCampsite.HasOceanAccess,
                     editCampsite.HasPool,
                     editCampsite.HasPlayground,
-                    editCampsite.HasCarCharger
+                    editCampsite.HasCarCharger,
+                    editCampsite.Image
                 );
             }
             editCampsite = null;
@@ -153,5 +161,11 @@ else
     private void CancelEdit()
     {
         editCampsite = null;
+    }
+
+
+    private void HandleCampsiteImage(byte[] imageBytes)
+    {
+        editCampsite.Image = imageBytes;
     }
 }

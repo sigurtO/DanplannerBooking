@@ -31,11 +31,11 @@
             <div class="mt-2 card" style="padding:8px;">
                 <div style="display:flex; gap:8px; align-items:center;">
                     <div style="width:72px; height:48px; overflow:hidden; border-radius:6px; border:1px solid #ddd;">
-                        <img src="@BgImageUrl" alt="Campsite preview" style="width:100%; height:100%; object-fit:cover;" />
+                        <img src="@BgImageBase64" alt="Campsite preview" style="width:100%; height:100%; object-fit:cover;" />
                     </div>
                     <div>
                         <div><strong>@SelectedCampsite.Name</strong></div>
-                        <div class="text-muted" style="font-size:.85rem;">Billedsti: <code>@BgImageUrl</code></div>
+                        <div class="text-muted" style="font-size:.85rem;">Billedsti: <code>@BgImageBase64</code></div>
                     </div>
                 </div>
             </div>
@@ -161,7 +161,7 @@
             <svg id="campsiteSvg" viewBox="0 0 800 600" style="width:100%; height:100%;">
                 <defs>
                     <pattern id="editorBg" patternUnits="userSpaceOnUse" width="800" height="600">
-                        <image href="@BgImageUrl" x="0" y="0" width="800" height="600" preserveAspectRatio="xMidYMid slice" />
+                        <image href="@BgImageBase64" x="0" y="0" width="800" height="600" preserveAspectRatio="xMidYMid slice" />
                     </pattern>
                 </defs>
                 <rect x="0" y="0" width="800" height="600" fill="url(#editorBg)" />
@@ -201,12 +201,15 @@
     {
         public string Id { get; set; } = "";
         public string Name { get; set; } = "";
-        public string ImageUrl { get; set; } = "";
+        public byte[]? Image { get; set; }
     }
     private List<UiCampsite> Campsites = new();
     private string? SelectedCampsiteId;
     private UiCampsite? SelectedCampsite => Campsites.FirstOrDefault(c => c.Id == SelectedCampsiteId);
-    private string BgImageUrl => string.IsNullOrWhiteSpace(SelectedCampsite?.ImageUrl) ? "images/campsite.jpg" : SelectedCampsite!.ImageUrl;
+    private string BgImageBase64 =>
+        SelectedCampsite?.Image != null && SelectedCampsite.Image.Length > 0
+            ? $"data:image/png;base64,{Convert.ToBase64String(SelectedCampsite.Image)}"
+            : "images/campsite.jpg"; // fallback
 
     private bool DisabledNoCampsite => string.IsNullOrEmpty(SelectedCampsiteId);
     private bool DisabledNoNew => DisabledNoCampsite || !Units.Any(u => !u.FromDb);
@@ -271,12 +274,12 @@
     {
         try
         {
-            var data = await Http.GetFromJsonAsync<List<CampsiteDto>>("api/campsites") ?? new();
+            var data = await Http.GetFromJsonAsync<List<CampsiteResponseDto>>("api/campsites") ?? new();
             Campsites = data.Select(c => new UiCampsite
             {
                 Id = c.Id.ToString(),
                 Name = c.Name,
-                ImageUrl = string.IsNullOrWhiteSpace(c.ImageUrl) ? "images/campsite.jpg" : c.ImageUrl
+                Image = c.Image
             }).ToList();
         }
         catch
@@ -290,6 +293,7 @@
         await RefreshForCampsite();
         StateHasChanged();
     }
+
 
     private async Task OnCampsiteChanged() => await RefreshForCampsite();
 

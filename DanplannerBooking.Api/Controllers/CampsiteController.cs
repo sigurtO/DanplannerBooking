@@ -36,7 +36,8 @@ public class CampsiteController : ControllerBase
                 c.HasOceanAccess,
                 c.HasPool,
                 c.HasPlayground,
-                c.HasCarCharger
+                c.HasCarCharger,
+                c.Image
             ))
             .ToList();
 
@@ -59,7 +60,8 @@ public class CampsiteController : ControllerBase
             campsite.HasOceanAccess,
             campsite.HasPool,
             campsite.HasPlayground,
-            campsite.HasCarCharger
+            campsite.HasCarCharger,
+            campsite.Image
         );
 
         return Ok(dto);
@@ -78,7 +80,7 @@ public class CampsiteController : ControllerBase
             Name = dto.Name,
             Location = dto.Location,
             Description = dto.Description,
-            // ImageUrl kan sættes et andet sted – vi lader den stå til default
+            Image = dto.Image,
             HasOceanAccess = dto.HasOceanAccess,
             HasPool = dto.HasPool,
             HasPlayground = dto.HasPlayground,
@@ -126,26 +128,6 @@ public class CampsiteController : ControllerBase
         return NoContent();
     }
 
-    // ---------------------------------------------
-    // Simpel liste til kort/editor: GET /api/campsites
-    // ---------------------------------------------
-    [HttpGet("/api/campsites")]
-    public async Task<ActionResult<IEnumerable<CampsiteDto>>> GetForMap()
-    {
-        var campsites = await _campsiteRepository.GetAllAsync();
-
-        var items = campsites
-            .Select(c => new CampsiteDto
-            {
-                Id = c.Id,
-                Name = c.Name,
-                ImageUrl = string.IsNullOrEmpty(c.ImageUrl)
-                    ? "images/campsites/default.jpg"
-                    : c.ImageUrl
-            })
-            .OrderBy(c => c.Name)
-            .ToList();
-
-        return Ok(items);
-    }
+   
 }
+

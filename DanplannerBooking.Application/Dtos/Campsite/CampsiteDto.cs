@@ -3,28 +3,31 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DanplannerBooking.Application.Dtos.Campsite
 {
-    // Bruges til at oprette/ændre en campsite (Create + Update)
+    // Used for create + update
     public class CreateCampsiteDto
     {
         [Required]
         [StringLength(100)]
-        public string Name { get; set; } = string.Empty;
+        public string Name { get; set; }
 
         [Required]
         [StringLength(200)]
-        public string Location { get; set; } = string.Empty;
+        public string Location { get; set; }
 
         [Required]
         [StringLength(1000)]
-        public string Description { get; set; } = string.Empty;
+        public string Description { get; set; }
 
         public bool HasOceanAccess { get; set; }
         public bool HasPool { get; set; }
         public bool HasPlayground { get; set; }
         public bool HasCarCharger { get; set; }
+
+        // Store image bytes (optional)
+        public byte[]? Image { get; set; }
     }
 
-    // Bruges til detaljer/oversigts-sider (CreateCottage, CreateSpace, /campsites)
+    // Response DTO (adjust as needed)
     public record CampsiteResponseDto(
         Guid Id,
         string Name,
@@ -33,6 +36,7 @@ namespace DanplannerBooking.Application.Dtos.Campsite
         bool HasOceanAccess,
         bool HasPool,
         bool HasPlayground,
-        bool HasCarCharger
+        bool HasCarCharger,
+        byte[]? Image
     );
 }
