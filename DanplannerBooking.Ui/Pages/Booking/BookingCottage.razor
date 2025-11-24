@@ -4,6 +4,7 @@
 @using DanplannerBooking.Application.Dtos.Booking
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
+@using MudBlazor
 
 <h3>Book Your Cottage</h3>
 
@@ -25,7 +26,6 @@ else
                         <DataAnnotationsValidator />
                         <ValidationSummary />
 
-
                         <div class="mb-3">
                             <label>Assign Admin:</label>
                             <InputSelect @bind-Value="newBooking.UserId" class="form-control">
@@ -37,15 +37,16 @@ else
                             </InputSelect>
                         </div>
 
-
                         <div class="mb-3">
-                            <label>Check-in Date:</label>
-                            <InputDate @bind-Value="newBooking.DateStart" class="form-control" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label>Check-out Date:</label>
-                            <InputDate @bind-Value="newBooking.DateEnd" class="form-control" />
+                            <label>Booking Dates:</label>
+                            <MudProvider>
+                                <MudPopoverProvider />
+                                <MudThemeProvider IsDarkMode="false" />
+                                <MudDateRangePicker @bind-DateRange="BookingRange"
+                                                    PickerVariant="PickerVariant.Static"
+                                                    Variant="Variant.Outlined"
+                                                    Class="w-100" />
+                            </MudProvider>
                         </div>
 
                         <div class="mb-3">
@@ -105,16 +106,27 @@ else
 
     private CottageResponseDto? cottage;
     private List<AddOnResponseDto>? addOns;
-    private List<UserResponseDto>? adminUsers;   // <-- add this
+    private List<UserResponseDto>? adminUsers;
     private Dictionary<Guid, bool> addonSelections = new();
     private BookingDto newBooking = new();
     private string? error;
+
+    // Property wrapper for DateRange → maps directly to newBooking
+    private DateRange BookingRange
+    {
+        get => new DateRange(newBooking.DateStart, newBooking.DateEnd);
+        set
+        {
+            newBooking.DateStart = value.Start ?? DateTime.Today;
+            newBooking.DateEnd   = value.End   ?? DateTime.Today;
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
         cottage = await Http.GetFromJsonAsync<CottageResponseDto>($"api/cottage/{cottageId}");
         addOns = await Http.GetFromJsonAsync<List<AddOnResponseDto>>("api/addon");
-        adminUsers = await Http.GetFromJsonAsync<List<UserResponseDto>>("api/user/admin"); // <-- fetch admins
+        adminUsers = await Http.GetFromJsonAsync<List<UserResponseDto>>("api/user/admin");
 
         foreach (var addon in addOns)
         {
@@ -124,7 +136,7 @@ else
         newBooking.CottageId = cottageId;
         newBooking.Cottage = cottage;
         newBooking.DateStart = DateTime.Today;
-        newBooking.DateEnd = DateTime.Today.AddDays(1);
+        newBooking.DateEnd = DateTime.Today.AddDays(7);
         newBooking.NumberOfPeople = 2;
         newBooking.UserId = Guid.NewGuid(); // Replace with actual logged-in user ID
         newBooking.TotalPrice = cottage.PricePerNight;
