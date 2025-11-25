@@ -252,7 +252,7 @@ else
     {
         try
         {
-            var data = await Http.GetFromJsonAsync<List<CampsiteResponseDto>>("api/campsites")
+            var data = await Http.GetFromJsonAsync<List<CampsiteResponseDto>>("api/campsite")
                        ?? new List<CampsiteResponseDto>();
 
             Campsites = data
