@@ -274,7 +274,7 @@
     {
         try
         {
-            var data = await Http.GetFromJsonAsync<List<CampsiteResponseDto>>("api/campsites") ?? new();
+            var data = await Http.GetFromJsonAsync<List<CampsiteResponseDto>>("api/campsite") ?? new();
             Campsites = data.Select(c => new UiCampsite
             {
                 Id = c.Id.ToString(),
