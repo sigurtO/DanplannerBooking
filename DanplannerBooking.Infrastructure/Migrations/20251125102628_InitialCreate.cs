@@ -35,7 +35,7 @@ namespace DanplannerBooking.Infrastructure.Migrations
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Location = table.Column<string>(type: "nvarchar(max)", nullable: false, defaultValue: "N/A"),
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: false, defaultValue: ""),
-                    ImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Image = table.Column<byte[]>(type: "varbinary(max)", nullable: false),
                     HasOceanAccess = table.Column<bool>(type: "bit", nullable: false),
                     HasPool = table.Column<bool>(type: "bit", nullable: false),
                     HasPlayground = table.Column<bool>(type: "bit", nullable: false),
