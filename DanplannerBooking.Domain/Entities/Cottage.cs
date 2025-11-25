@@ -26,6 +26,6 @@
         public bool IsAvailable { get; set; }
         public decimal PricePerNight { get; set; }
 
-        public byte[] Image { get; set; } = Array.Empty<byte>();
+        public byte[] Image { get; set; }
     }
 }

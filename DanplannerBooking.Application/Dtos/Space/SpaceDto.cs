@@ -42,7 +42,7 @@ namespace DanplannerBooking.Application.Dtos.Space
         [Range(1, 100000, ErrorMessage = "Price per night must be greater than 0.")]
         public decimal PricePerNight { get; set; }
 
-        public byte[] Image { get; set; } = Array.Empty<byte>();
+        public byte[] Image { get; set; }
     }
 
     public record SpaceResponseDto(
