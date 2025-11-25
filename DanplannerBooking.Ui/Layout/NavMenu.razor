@@ -1,4 +1,6 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@inject NavigationManager NavigationManager
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">DanplannerBooking.Ui</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
@@ -9,90 +11,107 @@
 
 <div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
     <nav class="flex-column">
+
+        <!-- ALWAYS VISIBLE FOR ALL USERS -->
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
             </NavLink>
         </div>
+
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/login">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Login
+                <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> Login
             </NavLink>
         </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/AdminDashboard">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Dashboard
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/create-campsite">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Create Campsite
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/campsites">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Campsite
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/create-space">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Create Space
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/allSpaces">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> All Spaces
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/spaces-admin">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Spaces Admin
-            </NavLink>
-        </div>
+
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/register">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Register
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/users">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Users
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/Create-Cottage">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Create Cottage
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/allCottages">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Cottage
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/Cottages-admin">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Cottage Admin
+                <span class="bi bi-person-plus-fill-nav-menu" aria-hidden="true"></span> Register
             </NavLink>
         </div>
 
-        <!-- HEAD: Create Addon -->
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/create-addon">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Create Addon
-            </NavLink>
-        </div>
+        <!-- ADMIN ONLY SECTION -->
+        <AuthorizeView Roles="Admin">
+            <Authorized>
 
-        <!-- Branch: Map + Editor -->
-        <li class="nav-item px-3">
+                <div class="nav-item px-3 mt-3">
+                    <strong class="text-light">Admin Panel</strong>
+                </div>
+
+                <!-- DASHBOARD -->
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/AdminDashboard">
+                        <span class="bi bi-speedometer2-nav-menu" aria-hidden="true"></span> Dashboard
+                    </NavLink>
+                </div>
+
+                <!-- USERS -->
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/users">
+                        <span class="bi bi-people-fill-nav-menu" aria-hidden="true"></span> All Users
+                    </NavLink>
+                </div>
+
+                <!-- CAMPSITES -->
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/create-campsite">
+                        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Create Campsite
+                    </NavLink>
+                </div>
+
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/campsites">
+                        <span class="bi bi-list-ul-nav-menu" aria-hidden="true"></span> Campsites
+                    </NavLink>
+                </div>
+
+                <!-- SPACES -->
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/create-space">
+                        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Create Space
+                    </NavLink>
+                </div>
+
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/allSpaces">
+                        <span class="bi bi-list-ul-nav-menu" aria-hidden="true"></span> All Spaces
+                    </NavLink>
+                </div>
+
+                <!-- COTTAGES -->
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/Create-Cottage">
+                        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Create Cottage
+                    </NavLink>
+                </div>
+
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/allCottages">
+                        <span class="bi bi-list-ul-nav-menu" aria-hidden="true"></span> Cottages
+                    </NavLink>
+                </div>
+
+                <!-- ADDONS -->
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/create-addon">
+                        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Create Addon
+                    </NavLink>
+                </div>
+
+                      <!-- Branch: Map + Editor -->
+        <div class="nav-item px-3">
             <NavLink class="nav-link" href="/map" Match="NavLinkMatch.All">
                 <span class="oi oi-map" aria-hidden="true"></span> Pladskort
             </NavLink>
-        </li>
-        <li class="nav-item px-3">
+        </div>
+        <div class="nav-item px-3">
             <NavLink class="nav-link" href="/editor">
                 <span class="oi oi-wrench" aria-hidden="true"></span> Kort-editor
             </NavLink>
-        </li>
+        </div>
+            </Authorized>
+        </AuthorizeView>
 
     </nav>
 </div>

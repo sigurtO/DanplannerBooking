@@ -1,10 +1,12 @@
-﻿using DanplannerBooking.Application.Interfaces;
+﻿using DanplannerBooking.Application.Dtos.AddOn;
+using DanplannerBooking.Application.Interfaces;
 using DanplannerBooking.Domain.Entities;
-using DanplannerBooking.Application.Dtos.AddOn;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DanplannerBooking.Api.Controllers
 {
+    [Authorize(Policy = "AdminOnly")]
     [ApiController]
     [Route("api/[controller]")]
     public class AddOnController : Controller

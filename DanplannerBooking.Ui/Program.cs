@@ -6,33 +6,48 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MudBlazor.Services;
 using MudBlazor;
+using Microsoft.Extensions.DependencyInjection;
+using System.Net.Http.Headers;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
+
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 // ---------------------------------------------------
-// 1) HTTP CLIENT TIL API
-// ---------------------------------------------------
-builder.Services.AddScoped(sp => new HttpClient
-{
-    BaseAddress = new Uri("https://localhost:7061/")
-});
-
-// ---------------------------------------------------
-// 2) LOCAL STORAGE
+// Local Storage
 // ---------------------------------------------------
 builder.Services.AddBlazoredLocalStorage();
 
 // ---------------------------------------------------
-// 3) AUTHENTICATION (BLAZOR CLIENT-SIDE)
+// Authentication
 // ---------------------------------------------------
 builder.Services.AddAuthorizationCore();
-
-// REGISTRER VORES CUSTOM AUTH PROVIDER
 builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthenticationStateProvider>();
 
 //mudblazor
 builder.Services.AddMudServices();
+// ---------------------------------------------------
+// Token Handler (tilf�jer JWT til alle requests)
+// ---------------------------------------------------
+builder.Services.AddTransient<TokenAuthorizationHandler>();
+
+// ---------------------------------------------------
+// HttpClient med handler
+// ---------------------------------------------------
+builder.Services.AddHttpClient("ApiClient", client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7061/");
+})
+.AddHttpMessageHandler<TokenAuthorizationHandler>();
+
+// ---------------------------------------------------
+// Default HttpClient (bruges via DI)
+// ---------------------------------------------------
+builder.Services.AddScoped(sp =>
+{
+    var factory = sp.GetRequiredService<IHttpClientFactory>();
+    return factory.CreateClient("ApiClient");
+});
 
 await builder.Build().RunAsync();

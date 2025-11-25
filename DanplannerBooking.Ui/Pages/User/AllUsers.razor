@@ -1,79 +1,113 @@
 ﻿@page "/users"
+@using Microsoft.AspNetCore.Authorization
+@using DanplannerBooking.Application.Dtos.User
 
-<h3>All Users</h3>
+@attribute [Authorize(Roles = "Admin")]
 
-@if (users == null)
-{
-    <p>Loading users...</p>
-}
-else if (users.Count == 0)
-{
-    <p>No users found.</p>
-}
-else
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>User Name</th>
-                <th>Email</th>
-                <th>Account Type</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var user in users)
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<AuthorizeView Roles="Admin">
+    <Authorized Context="adminContent">
+
+
+        <h3>All Users</h3>
+
+        @if (users == null)
+        {
+            <p>Loading users...</p>
+        }
+        else if (users.Count == 0)
+        {
+            <p>No users found.</p>
+        }
+        else
+        {
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>User Name</th>
+                        <th>Email</th>
+                        <th>Account Type</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in users)
+                    {
+                        <tr>
+                            <td>@user.Name</td>
+                            <td>@user.Email</td>
+                            <td>@(user.Role == "Admin" ? "Admin" : "User")</td>
+                            <td>
+                                <button class="btn btn-warning btn-sm" @onclick="() => EditUser(user)">Update</button>
+                                <button class="btn btn-danger btn-sm" @onclick="() => DeleteUser(user.Id)">Delete</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        @if (editUser != null)
+        {
+            <h4>Edit User</h4>
+            <EditForm Model="@editUser" OnValidSubmit="HandleUpdate">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-2">
+                    <label>Name:</label>
+                    <InputText @bind-Value="editUser.Name" class="form-control" />
+                </div>
+
+                <div class="mb-2">
+                    <label>Email:</label>
+                    <InputText @bind-Value="editUser.Email" class="form-control" />
+                </div>
+
+                <div class="mb-2">
+                    <label>Phone:</label>
+                    <InputText @bind-Value="editUser.Phone" class="form-control" />
+                </div>
+
+                <div class="mb-2">
+                    <label>Country:</label>
+                    <InputText @bind-Value="editUser.Country" class="form-control" />
+                </div>
+
+                <div class="mb-2">
+                    <label>Language:</label>
+                    <InputText @bind-Value="editUser.Language" class="form-control" />
+                </div>
+
+                <div class="mb-2">
+                    <label>Role:</label>
+                    <InputSelect @bind-Value="editUser.Role" class="form-control">
+                        <option value="User">User</option>
+                        <option value="Admin">Admin</option>
+                    </InputSelect>
+                </div>
+
+                <button type="submit" class="btn btn-success">Save Changes</button>
+                <button type="button" class="btn btn-secondary ms-2" @onclick="CancelEdit">Cancel</button>
+            </EditForm>
+        }
+
+    </Authorized>
+
+    <NotAuthorized>
+        @code {
+            [Inject] NavigationManager RedirectNav { get; set; }
+
+            protected override void OnInitialized()
             {
-                <tr>
-                    <td>@user.Name</td>
-                    <td>@user.Email</td>
-                    <td>@(user.Role == "Admin" ? "Admin" : "User")</td>
-                    <td>
-                        <button class="btn btn-warning btn-sm" @onclick="() => EditUser(user)">Update</button>
-                        <button class="btn btn-danger btn-sm" @onclick="() => DeleteUser(user.Id)">Delete</button>
-                    </td>
-                </tr>
+                // non-admin → force redirect
+                RedirectNav.NavigateTo("/login", true);
             }
-        </tbody>
-    </table>
-}
-
-@if (editUser != null)
-{
-    <h4>Edit User</h4>
-    <EditForm Model="@editUser" OnValidSubmit="HandleUpdate">
-        <DataAnnotationsValidator />
-        <ValidationSummary />
-
-        <div>
-            <label>Name:</label>
-            <InputText @bind-Value="editUser.Name" class="form-control" />
-        </div>
-
-        <div>
-            <label>Email:</label>
-            <InputText @bind-Value="editUser.Email" class="form-control" />
-        </div>
-
-        <div>
-            <label>Phone:</label>
-            <InputText @bind-Value="editUser.Phone" class="form-control" />
-        </div>
-
-        <div>
-            <label>Country:</label>
-            <InputText @bind-Value="editUser.Country" class="form-control" />
-        </div>
-
-        <div>
-            <label>Language:</label>
-            <InputText @bind-Value="editUser.Language" class="form-control" />
-        </div>
-
-        <button type="submit" class="btn btn-success">Save Changes</button>
-        <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
-    </EditForm>
-}
+        }
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
     private List<UserResponseDto> users;
@@ -111,9 +145,11 @@ else
     private async Task HandleUpdate()
     {
         var response = await Http.PutAsJsonAsync($"api/user/{editingUserId}", editUser);
+
         if (response.IsSuccessStatusCode)
         {
             var index = users.FindIndex(u => u.Id == editingUserId);
+
             if (index != -1)
             {
                 users[index] = new UserResponseDto(
@@ -123,10 +159,10 @@ else
                     editUser.Phone,
                     editUser.Country,
                     editUser.Language,
-                   editUser.Role // preserve admin flag
+                    editUser.Role
                 );
-
             }
+
             editUser = null;
         }
     }

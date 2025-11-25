@@ -2,6 +2,7 @@ using DanplannerBooking.Application.Dtos;
 using DanplannerBooking.Application.Dtos.Campsite;
 using DanplannerBooking.Application.Interfaces;
 using DanplannerBooking.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DanplannerBooking.Api.Controllers;
@@ -13,6 +14,10 @@ public class CampsiteController : ControllerBase
     private readonly ICampsiteRepository _campsiteRepository;
 
     public CampsiteController(ICampsiteRepository campsiteRepository)
+    
+    [ApiController]
+    [Route("api/[controller]")]
+    public class CampsiteController : Controller
     {
         _campsiteRepository = campsiteRepository;
     }
@@ -78,7 +83,7 @@ public class CampsiteController : ControllerBase
             Name = dto.Name,
             Location = dto.Location,
             Description = dto.Description,
-            // ImageUrl kan sættes et andet sted – vi lader den stå til default
+            // ImageUrl kan sï¿½ttes et andet sted ï¿½ vi lader den stï¿½ til default
             HasOceanAccess = dto.HasOceanAccess,
             HasPool = dto.HasPool,
             HasPlayground = dto.HasPlayground,
@@ -145,7 +150,61 @@ public class CampsiteController : ControllerBase
             })
             .OrderBy(c => c.Name)
             .ToList();
+            return Ok(items);
+        }
+    }
 
-        return Ok(items);
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public async Task<IActionResult> CreateCampsite([FromBody] CreateCampsiteDto campsite)
+        {
+            var newCampsite = new Campsite // is this still 4 layer structure?
+            {
+                Name = campsite.Name,
+                Location = campsite.Location,
+                Description = campsite.Description,
+                HasOceanAccess = campsite.HasOceanAccess,
+                HasPool = campsite.HasPool,
+                HasPlayground = campsite.HasPlayground,
+                HasCarCharger = campsite.HasCarCharger
+            };
+            await _campsiteRepository.CreateAsync(newCampsite);
+            return CreatedAtAction(nameof(GetCampsiteById), new { id = newCampsite.Id }, null);
+
+        }
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPut("{id}")]
+        // [Authorize(Policy = "AdminOnly")] //check happens in program.cs
+        public async Task<IActionResult> UpdateCampsite(Guid id, [FromBody] CreateCampsiteDto updatedCampsite)
+        {
+            var campsite = new Campsite
+            {
+                Name = updatedCampsite.Name,
+                Location = updatedCampsite.Location,
+                Description = updatedCampsite.Description,
+                HasOceanAccess = updatedCampsite.HasOceanAccess,
+                HasPool = updatedCampsite.HasPool,
+                HasPlayground = updatedCampsite.HasPlayground,
+                HasCarCharger = updatedCampsite.HasCarCharger
+            };
+            var result = await _campsiteRepository.UpdateAsync(id, campsite);
+            if (!result)
+            {
+                return NotFound();
+            }
+            return NoContent();
+        }
+
+        [Authorize(Policy = "AdminOnly")]
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteCampsite(Guid id)
+        {
+            var result = await _campsiteRepository.DeleteAsync(id);
+            if (!result)
+            {
+                return NotFound();
+            }
+            return NoContent();
+        }
     }
 }

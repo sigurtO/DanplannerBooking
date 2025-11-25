@@ -1,98 +1,135 @@
 ﻿@page "/create-space"
+@using Microsoft.AspNetCore.Authorization
+@using DanplannerBooking.Application.Dtos.Space
+@using DanplannerBooking.Application.Dtos.Campsite
+
+@attribute [Authorize(Roles = "Admin")]
 
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 
-<h3>Create New Space</h3>
+<AuthorizeView Roles="Admin">
+    <Authorized Context="adminContent">
 
-@if (showSuccessMessage)
-{
-    <div class="alert alert-success" role="alert">
-        ✅ Space created successfully! Redirecting to spaces page...
-    </div>
-}
-@if (!string.IsNullOrWhiteSpace(error))
-{
-    <div class="alert alert-danger">@error</div>
-}
 
-<EditForm Model="@newSpace" OnValidSubmit="HandleValidSubmit">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+        <h3>Create New Space</h3>
 
-    <table class="table table-bordered">
-        <tbody>
-            <tr>
-                <td><label>Campsite:</label></td>
-                <td>
-                    <InputSelect @bind-Value="newSpace.CampsiteId" TValue="Guid" class="form-control">
-                        <option value="@Guid.Empty">-- Select Campsite --</option>
-                        @foreach (var campsite in campsiteOptions)
-                        {
-                            <option value="@campsite.Id">@campsite.Name (@campsite.Location)</option>
-                        }
-                    </InputSelect>
-                </td>
-            </tr>
-            <tr>
-                <td><label>Name:</label></td>
-                <td><InputText @bind-Value="newSpace.Name" class="form-control" /></td>
-            </tr>
-            <tr>
-                <td><label>Location:</label></td>
-                <td><InputText @bind-Value="newSpace.Location" class="form-control" /></td>
-            </tr>
-            <tr>
-                <td><label>Description:</label></td>
-                <td><InputTextArea @bind-Value="newSpace.Description" class="form-control" /></td>
-            </tr>
-            <tr>
-                <td><label>Price Per Night:</label></td>
-                <td><InputNumber @bind-Value="newSpace.PricePerNight" class="form-control" /></td>
-            </tr>
-            <tr>
-                <td><label>Available:</label></td>
-                <td><InputCheckbox @bind-Value="newSpace.IsAvailable" class="form-check-input" /></td>
-            </tr>
-            <tr>
-                <td><label>Has Electricity:</label></td>
-                <td><InputCheckbox @bind-Value="newSpace.HasElectricity" class="form-check-input" /></td>
-            </tr>
-            <tr>
-                <td><label>Meters From Toilet:</label></td>
-                <td><InputNumber @bind-Value="newSpace.MetersFromToilet" class="form-control" /></td>
-            </tr>
-            @if (selectedCampsite?.HasPool == true)
+        @if (showSuccessMessage)
+        {
+            <div class="alert alert-success" role="alert">
+                ✅ Space created successfully! Redirecting to spaces page...
+            </div>
+        }
+        @if (!string.IsNullOrWhiteSpace(error))
+        {
+            <div class="alert alert-danger">@error</div>
+        }
+
+        <EditForm Model="@newSpace" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <table class="table table-bordered">
+                <tbody>
+                    <tr>
+                        <td><label>Campsite:</label></td>
+                        <td>
+                            <InputSelect @bind-Value="newSpace.CampsiteId" TValue="Guid" class="form-control">
+                                <option value="@Guid.Empty">-- Select Campsite --</option>
+                                @foreach (var campsite in campsiteOptions)
+                                {
+                                    <option value="@campsite.Id">@campsite.Name (@campsite.Location)</option>
+                                }
+                            </InputSelect>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td><label>Name:</label></td>
+                        <td><InputText @bind-Value="newSpace.Name" class="form-control" /></td>
+                    </tr>
+
+                    <tr>
+                        <td><label>Location:</label></td>
+                        <td><InputText @bind-Value="newSpace.Location" class="form-control" /></td>
+                    </tr>
+
+                    <tr>
+                        <td><label>Description:</label></td>
+                        <td><InputTextArea @bind-Value="newSpace.Description" class="form-control" /></td>
+                    </tr>
+
+                    <tr>
+                        <td><label>Price Per Night:</label></td>
+                        <td><InputNumber @bind-Value="newSpace.PricePerNight" class="form-control" /></td>
+                    </tr>
+
+                    <tr>
+                        <td><label>Available:</label></td>
+                        <td><InputCheckbox @bind-Value="newSpace.IsAvailable" class="form-check-input" /></td>
+                    </tr>
+
+                    <tr>
+                        <td><label>Has Electricity:</label></td>
+                        <td><InputCheckbox @bind-Value="newSpace.HasElectricity" class="form-check-input" /></td>
+                    </tr>
+
+                    <tr>
+                        <td><label>Meters From Toilet:</label></td>
+                        <td><InputNumber @bind-Value="newSpace.MetersFromToilet" class="form-control" /></td>
+                    </tr>
+
+                    @if (selectedCampsite?.HasPool == true)
+                    {
+                        <tr>
+                            <td><label>Meters From Pool:</label></td>
+                            <td><InputNumber @bind-Value="newSpace.MetersFromPool" class="form-control" /></td>
+                        </tr>
+                    }
+
+                    @if (selectedCampsite?.HasPlayground == true)
+                    {
+                        <tr>
+                            <td><label>Meters From Playground:</label></td>
+                            <td><InputNumber @bind-Value="newSpace.MetersFromPlayground" class="form-control" /></td>
+                        </tr>
+                    }
+
+                    @if (selectedCampsite?.HasOceanAccess == true)
+                    {
+                        <tr>
+                            <td><label>Meters From Ocean:</label></td>
+                            <td><InputNumber @bind-Value="newSpace.MetersFromOcean" class="form-control" /></td>
+                        </tr>
+                    }
+
+                    <tr>
+                        <td colspan="2">
+                            <ImageUpload Label="Space Image"
+                                         InputId="spaceimage"
+                                         OnImageSelected="HandleSpaceImage" />
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <button type="submit" class="btn btn-success">Create Space</button>
+        </EditForm>
+
+    </Authorized>
+
+    <NotAuthorized>
+        @code {
+            [Inject] NavigationManager Nav { get; set; }
+
+            protected override void OnInitialized()
             {
-                <tr>
-                    <td><label>Meters From Pool:</label></td>
-                    <td><InputNumber @bind-Value="newSpace.MetersFromPool" class="form-control" /></td>
-                </tr>
+                // NON-ADMINS → send to login immediately
+                Nav.NavigateTo("/login", true);
             }
-            @if (selectedCampsite?.HasPlayground == true)
-            {
-                <tr>
-                    <td><label>Meters From Playground:</label></td>
-                    <td><InputNumber @bind-Value="newSpace.MetersFromPlayground" class="form-control" /></td>
-                </tr>
-            }
-            @if (selectedCampsite?.HasOceanAccess == true)
-            {
-                <tr>
-                    <td><label>Meters From Ocean:</label></td>
-                    <td><InputNumber @bind-Value="newSpace.MetersFromOcean" class="form-control" /></td>
-                </tr>
-            }
-            <tr>
-                <ImageUpload Label="Space Image"
-                             InputId="spaceimage"
-                             OnImageSelected="HandleSpaceImage" />
-            </tr>
-        </tbody>
-    </table>
-
-    <button type="submit" class="btn btn-success">Create Space</button>
-</EditForm>
+        }
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
     private CreateSpaceDto newSpace = new();
@@ -102,6 +139,11 @@
 
     private CampsiteResponseDto? selectedCampsite =>
         campsiteOptions.FirstOrDefault(c => c.Id == newSpace.CampsiteId);
+
+    protected override async Task OnInitializedAsync()
+    {
+        campsiteOptions = await Http.GetFromJsonAsync<List<CampsiteResponseDto>>("api/campsite");
+    }
 
     private async Task HandleValidSubmit()
     {
@@ -114,24 +156,20 @@
         }
 
         var response = await Http.PostAsJsonAsync("api/space", newSpace);
+
         if (response.IsSuccessStatusCode)
         {
             newSpace = new CreateSpaceDto();
             showSuccessMessage = true;
 
             await Task.Delay(2000);
-            NavigationManager.NavigateTo("/spaces");
+            NavigationManager.NavigateTo("/allSpaces");
         }
         else
         {
             var details = await response.Content.ReadAsStringAsync();
             error = $"Create failed ({(int)response.StatusCode}): {details}";
         }
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        campsiteOptions = await Http.GetFromJsonAsync<List<CampsiteResponseDto>>("api/campsite");
     }
 
     private void HandleSpaceImage(byte[] imageBytes)

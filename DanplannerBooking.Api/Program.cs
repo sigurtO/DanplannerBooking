@@ -36,6 +36,14 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AdminOnly", p => p.RequireClaim("IsAdmin", "true"));
 });
 
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy =>
+    {
+        policy.RequireAuthenticatedUser();   // <-- BESKYT MOD ANONYMOUS
+        policy.RequireRole("Admin");         // <-- KRï¿½V ADMIN
+    });
+});
 var jwt = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwt["Key"]!);
 
@@ -66,7 +74,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 var allowedOrigins = new[]
 {
     "https://localhost:7090", // UI via Visual Studio (HTTPS)
-    "http://localhost:7090",  // UI på HTTP
+    "http://localhost:7090",  // UI pï¿½ HTTP
     "http://localhost:5145"   // evt. ekstra HTTP-profil
 };
 

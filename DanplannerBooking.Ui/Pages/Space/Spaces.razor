@@ -1,67 +1,95 @@
 ﻿@page "/allSpaces"
+@using Microsoft.AspNetCore.Authorization
 @using DanplannerBooking.Application.Dtos.Space
+
+@attribute [Authorize(Roles = "Admin")]
+
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 
-<h3>Available Spaces</h3>
+<AuthorizeView Roles="Admin">
+    <Authorized Context="adminContent">
 
-@if (spaces == null)
-{
-    <p>Loading spaces...</p>
-}
-else if (spaces.Count == 0)
-{
-    <p>No spaces found.</p>
-}
-else
-{
-    <div class="row">
-        @foreach (var space in spaces)
+
+        <h3>Available Spaces</h3>
+
+        @if (spaces == null)
         {
-            <div class="col-md-6 mb-4">
-                <div class="card shadow-sm">
-                    <div class="row g-0">
-                        <div class="col-md-4">
-                            @if (space.Image != null && space.Image.Length > 0)
-                            {
-                                <img class="card-img-top"
-                                     src="@($"data:image/png;base64,{Convert.ToBase64String(space.Image)}")"
-                                     alt="Space Image"
-                                     style="height:200px; object-fit:cover;" />
-                            }
-                            else
-                            {
-                                <div class="card-img-top text-center p-5 bg-light text-muted">
-                                    No Image
+            <p>Loading spaces...</p>
+        }
+        else if (spaces.Count == 0)
+        {
+            <p>No spaces found.</p>
+        }
+        else
+        {
+            <div class="row">
+                @foreach (var space in spaces)
+                {
+                    <div class="col-md-6 mb-4">
+                        <div class="card shadow-sm">
+                            <div class="row g-0">
+                                <div class="col-md-4">
+                                    @if (space.Image != null && space.Image.Length > 0)
+                                    {
+                                        <img class="card-img-top"
+                                             src="@($"data:image/png;base64,{Convert.ToBase64String(space.Image)}")"
+                                             alt="Space Image"
+                                             style="height:200px; object-fit:cover;" />
+                                    }
+                                    else
+                                    {
+                                        <div class="card-img-top text-center p-5 bg-light text-muted">
+                                            No Image
+                                        </div>
+                                    }
                                 </div>
-                            }
-                        </div>
-                        <div class="col-md-8">
-                            <div class="card-body">
-                                <h5 class="card-title">@space.Name</h5>
-                                <p class="card-text">
-                                    <strong>Location:</strong> @space.Location<br />
-                                    <strong>Description:</strong> @space.Description<br />
-                                    <strong>Price:</strong> @space.PricePerNight.ToString("C")<br />
-                                    <strong>Availability:</strong> @(space.IsAvailable ? "✅ Available" : "❌ Unavailable")<br />
-                                    <strong>Electricity:</strong> @(space.HasElectricity ? "⚡ Yes" : "No")<br />
-                                    <strong>Distances:</strong><br />
-                                    🚽 @space.MetersFromToilet m<br />
-                                    @(space.MetersFromPool.HasValue ? $"🏊 {space.MetersFromPool} m" : "")
-                                    <br />
-                                    @(space.MetersFromPlayground.HasValue ? $"🛝 {space.MetersFromPlayground} m" : "")
-                                    <br />
-                                    @(space.MetersFromOcean.HasValue ? $"🌊 {space.MetersFromOcean} m" : "")
-                                </p>
-                                <button class="btn btn-primary" @onclick="() => NavigateToDetails(space.Id)">View Details</button>
+
+                                <div class="col-md-8">
+                                    <div class="card-body">
+                                        <h5 class="card-title">@space.Name</h5>
+                                        <p class="card-text">
+                                            <strong>Location:</strong> @space.Location<br />
+                                            <strong>Description:</strong> @space.Description<br />
+                                            <strong>Price:</strong> @space.PricePerNight.ToString("C")<br />
+                                            <strong>Availability:</strong> @(space.IsAvailable ? "✅ Available" : "❌ Unavailable")<br />
+                                            <strong>Electricity:</strong> @(space.HasElectricity ? "⚡ Yes" : "No")<br />
+
+                                            <strong>Distances:</strong><br />
+                                            🚽 @space.MetersFromToilet m<br />
+                                            @(space.MetersFromPool.HasValue ? $"🏊 {space.MetersFromPool} m" : "")<br />
+                                            @(space.MetersFromPlayground.HasValue ? $"🛝 {space.MetersFromPlayground} m" : "")<br />
+                                            @(space.MetersFromOcean.HasValue ? $"🌊 {space.MetersFromOcean} m" : "")
+                                        </p>
+
+                                        <button class="btn btn-primary"
+                                                @onclick="() => NavigateToDetails(space.Id)">
+                                            View Details
+                                        </button>
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
                     </div>
-                </div>
+                }
             </div>
         }
-    </div>
-}
+
+    </Authorized>
+
+    <NotAuthorized>
+        @code {
+            [Inject] NavigationManager Nav { get; set; }
+
+            protected override void OnInitialized()
+            {
+                // Non-admin -> Redirect to login
+                Nav.NavigateTo("/login", true);
+            }
+        }
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
     private List<SpaceResponseDto> spaces;
@@ -70,6 +98,7 @@ else
     {
         spaces = await Http.GetFromJsonAsync<List<SpaceResponseDto>>("api/space");
     }
+
     private void NavigateToDetails(Guid spaceId)
     {
         NavigationManager.NavigateTo($"/space/{spaceId}");

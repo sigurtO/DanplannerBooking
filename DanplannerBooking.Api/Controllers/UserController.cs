@@ -98,8 +98,9 @@ namespace DanplannerBooking.Api.Controllers
             return NoContent();
         }
 
+        [Authorize(Policy = "AdminOnly")]
         [HttpPut("{id}")] //Update user by id (admin)
-                          // [Authorize(Policy = "AdminOnly")] //check happens in program.cs
+                          
         public async Task<ActionResult> UpdateUser(Guid id, [FromBody] AdminUpdateUserDto adminUpdateUserDto)
         {
             var user = new User
@@ -120,8 +121,8 @@ namespace DanplannerBooking.Api.Controllers
         }
 
         //Delete api/user/{id}
+        [Authorize(Policy = "AdminOnly")]
         [HttpDelete("{id}")]
-        // [Authorize(Policy = "AdminOnly")]
         public async Task<ActionResult> DeleteUser(Guid id)
         {
             var result = await _userRepository.DeleteAsync(id);

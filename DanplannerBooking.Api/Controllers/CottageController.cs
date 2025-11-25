@@ -1,7 +1,8 @@
-﻿using DanplannerBooking.Application.Interfaces;
+﻿using DanplannerBooking.Application.Dtos.Cottage;
+using DanplannerBooking.Application.Interfaces;
 using DanplannerBooking.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using DanplannerBooking.Application.Dtos.Cottage;
 
 namespace DanplannerBooking.Api.Controllers
 {
@@ -34,6 +35,7 @@ namespace DanplannerBooking.Api.Controllers
             return Ok(cottage);
         }
 
+        [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> CreateCottage([FromBody] CottageDto cottageDto)
         {
@@ -57,8 +59,8 @@ namespace DanplannerBooking.Api.Controllers
             return CreatedAtAction(nameof(GetCottageById), new { id = newCottage.Id }, null);
         }
 
+        [Authorize(Policy = "AdminOnly")]
         [HttpPut("{id}")]
-        // [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> UpdateCottage(Guid id, [FromBody] CottageDto updatedDto)
         {
             var updatedCottage = new Cottage
@@ -86,8 +88,8 @@ namespace DanplannerBooking.Api.Controllers
         }
 
 
+        [Authorize(Policy = "AdminOnly")]
         [HttpDelete("{id}")]
-        // [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> DeleteCottage(Guid id)
         {
             var result = await _cottageRepository.DeleteAsync(id);

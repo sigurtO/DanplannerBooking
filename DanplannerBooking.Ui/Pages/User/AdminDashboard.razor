@@ -1,23 +1,24 @@
 ﻿@page "/AdminDashboard"
 @using Microsoft.AspNetCore.Authorization
-@attribute [Authorize(Roles = "Admin")]
-
-
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 @using DanplannerBooking.Application.Dtos.Booking
+
+@attribute [Authorize(Roles = "Admin")]
+
 @inject AuthenticationStateProvider AuthProvider
 @inject NavigationManager Nav
 @inject HttpClient Http
 
-<h3 class="mb-4">Admin Dashboard</h3>
-
 <AuthorizeView Roles="Admin">
+    <Authorized Context="adminContent">
 
-    <Authorized>
-        @if (role == null)
+
+        <h3 class="mb-4">Admin Dashboard</h3>
+
+        @if (arrivals == null || departures == null)
         {
-            <p>Loader...</p>
+            <p>Loader dashboard data...</p>
         }
         else
         {
@@ -26,14 +27,14 @@
                 <div class="col-md-6">
                     <div class="card shadow-sm p-3 border-0" style="background:#e8f8e8;">
                         <h5 class="card-title text-success">Ankomster i dag</h5>
-                        <h1 class="text-success fw-bold">@((arrivals?.Count ?? 0))</h1>
+                        <h1 class="text-success fw-bold">@arrivals.Count</h1>
                     </div>
                 </div>
 
                 <div class="col-md-6">
                     <div class="card shadow-sm p-3 border-0" style="background:#fdeaea;">
                         <h5 class="card-title text-danger">Afrejser i dag</h5>
-                        <h1 class="text-danger fw-bold">@((departures?.Count ?? 0))</h1>
+                        <h1 class="text-danger fw-bold">@departures.Count</h1>
                     </div>
                 </div>
             </div>
@@ -44,11 +45,7 @@
                     <h5 class="m-0">Ankomster i dag</h5>
                 </div>
                 <div class="card-body">
-                    @if (arrivals == null)
-                    {
-                        <p>Loader...</p>
-                    }
-                    else if (!arrivals.Any())
+                    @if (!arrivals.Any())
                     {
                         <p>Ingen ankomster i dag.</p>
                     }
@@ -77,11 +74,7 @@
                     <h5 class="m-0">Afrejser i dag</h5>
                 </div>
                 <div class="card-body">
-                    @if (departures == null)
-                    {
-                        <p>Loader...</p>
-                    }
-                    else if (!departures.Any())
+                    @if (!departures.Any())
                     {
                         <p>Ingen afrejser i dag.</p>
                     }
@@ -104,28 +97,34 @@
                 </div>
             </div>
 
-            <!-- ADMIN NAVIGATION -->
+            <!-- ADMIN SHORTCUTS -->
             <div class="card shadow-sm p-3">
                 <h5 class="mb-3">Administration</h5>
 
                 <div class="row row-cols-1 row-cols-md-3 g-3">
+
                     <div class="col">
                         <a class="btn btn-outline-primary w-100" href="/users">Brugere</a>
                     </div>
+
                     <div class="col">
-                        <a class="btn btn-outline-primary w-100" href="/spaces-admin">Pladser</a>
+                        <a class="btn btn-outline-primary w-100" href="/allSpaces">Pladser</a>
                     </div>
+
                     <div class="col">
-                        <a class="btn btn-outline-primary w-100" href="/cottages-admin">Hytter</a>
+                        <a class="btn btn-outline-primary w-100" href="/allCottages">Hytter</a>
                     </div>
+
                     <div class="col">
-                        <a class="btn btn-outline-success w-100" href="/create-Space">Opret plads</a>
+                        <a class="btn btn-outline-success w-100" href="/create-space">Opret plads</a>
                     </div>
+
                     <div class="col">
-                        <a class="btn btn-outline-success w-100" href="/create-Cottage">Opret hytte</a>
+                        <a class="btn btn-outline-success w-100" href="/create-cottage">Opret hytte</a>
                     </div>
+
                     <div class="col">
-                        <a class="btn btn-outline-success w-100" href="/create-Addon">Opret tilkøb</a>
+                        <a class="btn btn-outline-success w-100" href="/create-addon">Opret tilkøb</a>
                     </div>
                 </div>
             </div>
@@ -133,34 +132,26 @@
     </Authorized>
 
     <NotAuthorized>
-        <p>Du er ikke logget ind som administrator.</p>
-        <button class="btn btn-primary" @onclick="GoToLogin">Login</button>
+        @code {
+            [Inject] NavigationManager RedirectNav { get; set; }
+
+            protected override void OnInitialized()
+            {
+                // Redirect direkte til login hvis personen åbner dashboard uden admin-rolle
+                RedirectNav.NavigateTo("/login", true);
+            }
+        }
     </NotAuthorized>
 </AuthorizeView>
 
-
 @code {
-    private string? role;
-
     private List<BookingDashboardDto>? arrivals;
     private List<BookingDashboardDto>? departures;
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-
-        // (valgfrit) du må godt beholde dette hvis du bruger 'role' i dit UI:
-        role = user.FindFirst(ClaimTypes.Role)?.Value
-            ?? user.FindFirst("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value;
-
         // Load dashboard data
         arrivals = await Http.GetFromJsonAsync<List<BookingDashboardDto>>("api/booking/arrivals-today");
         departures = await Http.GetFromJsonAsync<List<BookingDashboardDto>>("api/booking/departures-today");
-    }
-
-    private void GoToLogin()
-    {
-        Nav.NavigateTo("/login");
     }
 }
