@@ -1,5 +1,10 @@
-﻿<MudDateRangePicker @bind-DateRange="SelectedRange"
-                    DayClassFunc="GetDayClass"
+﻿@using MudBlazor
+@using DanplannerBooking.Application.Dtos.Booking
+
+<MudDateRangePicker DateRange="SelectedRange"
+                    DateRangeChanged="OnDateRangeChanged"
+                    AdditionalDateClassesFunc="GetDayClass"
+                    IsDateDisabledFunc="IsDateDisabled"
                     PickerVariant="PickerVariant.Static"
                     Variant="Variant.Outlined"
                     Class="w-100" />
@@ -10,15 +15,39 @@
 
     [Parameter] public List<BookingRangeDto> UnavailableRanges { get; set; } = new();
 
+    private async Task OnDateRangeChanged(DateRange range)
+    {
+        SelectedRange = range;
+        await SelectedRangeChanged.InvokeAsync(range);
+    }
+
+    // ---- FARVER (rød / grøn) ----
     private string GetDayClass(DateTime date)
     {
+        if (UnavailableRanges == null || UnavailableRanges.Count == 0)
+            return "mud-available-day";   // alt grønt hvis ingen booking ranges
+
         foreach (var range in UnavailableRanges)
         {
             if (date.Date >= range.Start.Date && date.Date <= range.End.Date)
-                return "mud-unavailable-day";
+                return "mud-unavailable-day"; // rød og disabled
         }
-        return null; // null is safer than empty string
+
+        return "mud-available-day"; // ikke booket → grøn
     }
 
+    // ---- DISABLE BOOKEDE DAGE ----
+    private bool IsDateDisabled(DateTime date)
+    {
+        if (UnavailableRanges == null || UnavailableRanges.Count == 0)
+            return false;
 
+        foreach (var range in UnavailableRanges)
+        {
+            if (date.Date >= range.Start.Date && date.Date <= range.End.Date)
+                return true; // kan ikke klikkes
+        }
+
+        return false;
+    }
 }

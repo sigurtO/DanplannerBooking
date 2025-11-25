@@ -98,19 +98,6 @@ a, .btn-link {
         content: var(--blazor-load-percentage-text, "Loading");
     }
 
-/* Base unavailable day */
-.mud-picker-calendar-day.mud-unavailable-day {
-    background-color: rgba(255, 0, 0, 0.3) !important;
-}
-
-    .mud-picker-calendar-day.mud-unavailable-day.mud-selected {
-        background-color: rgba(255, 0, 0, 0.6) !important;
-        color: white !important;
-    }
-
-    .mud-picker-calendar-day.mud-unavailable-day.mud-range-between {
-        background-color: rgba(255, 0, 0, 0.4) !important;
-    }
 
 
 
@@ -193,3 +180,25 @@ code {
         .map-infocard .primary:hover {
             filter: brightness(1.05);
         }
+
+/* BOOKEDE (unavailable) dage – røde + disabled */
+.mud-unavailable-day {
+    background-color: rgba(255, 0, 0, 0.3) !important;
+}
+
+    .mud-unavailable-day.mud-selected,
+    .mud-unavailable-day.mud-range-between {
+        background-color: rgba(255, 0, 0, 0.6) !important;
+        color: white !important;
+    }
+
+/* LEDIGE (available) dage – grønne */
+.mud-available-day {
+    background-color: rgba(0, 160, 70, 0.2) !important;
+}
+
+    .mud-available-day.mud-selected,
+    .mud-available-day.mud-range-between {
+        background-color: rgba(0, 160, 70, 0.5) !important;
+        color: white !important;
+    }
