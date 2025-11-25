@@ -4,40 +4,50 @@
 <MudDateRangePicker DateRange="SelectedRange"
                     DateRangeChanged="OnDateRangeChanged"
                     AdditionalDateClassesFunc="GetDayClass"
+                    IsDateDisabledFunc="IsDateDisabled"
                     PickerVariant="PickerVariant.Static"
                     Variant="Variant.Outlined"
                     Class="w-100" />
 
 @code {
-    // Binder til parent via: @bind-SelectedRange i BookingCottage
     [Parameter] public DateRange SelectedRange { get; set; }
     [Parameter] public EventCallback<DateRange> SelectedRangeChanged { get; set; }
 
-    // Listen af bookede perioder, der skal farves røde
     [Parameter] public List<BookingRangeDto> UnavailableRanges { get; set; } = new();
 
-    // KALDES når brugeren vælger datoer i MudDateRangePicker
     private async Task OnDateRangeChanged(DateRange range)
     {
         SelectedRange = range;
-
-        // Det HER var det, der manglede før:
-        // Nu kalder vi SelectedRangeChanged, så BookingRange-setteren i parent kører
         await SelectedRangeChanged.InvokeAsync(range);
     }
 
-    // Her sætter vi CSS-klasser for "unavailable" dage
+    // ---- FARVER (rød / grøn) ----
     private string GetDayClass(DateTime date)
     {
         if (UnavailableRanges == null || UnavailableRanges.Count == 0)
-            return null;
+            return "mud-available-day";   // alt grønt hvis ingen booking ranges
 
         foreach (var range in UnavailableRanges)
         {
             if (date.Date >= range.Start.Date && date.Date <= range.End.Date)
-                return "mud-unavailable-day";
+                return "mud-unavailable-day"; // rød og disabled
         }
 
-        return null;
+        return "mud-available-day"; // ikke booket → grøn
+    }
+
+    // ---- DISABLE BOOKEDE DAGE ----
+    private bool IsDateDisabled(DateTime date)
+    {
+        if (UnavailableRanges == null || UnavailableRanges.Count == 0)
+            return false;
+
+        foreach (var range in UnavailableRanges)
+        {
+            if (date.Date >= range.Start.Date && date.Date <= range.End.Date)
+                return true; // kan ikke klikkes
+        }
+
+        return false;
     }
 }
