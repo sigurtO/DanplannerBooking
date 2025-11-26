@@ -2,6 +2,7 @@
 @using DanplannerBooking.Application.Dtos.Campsite
 @inject NavigationManager NavigationManager
 @inject HttpClient Http
+@attribute [Authorize(Roles = "Admin")]
 
 <h3>Create New Campsite</h3>
 

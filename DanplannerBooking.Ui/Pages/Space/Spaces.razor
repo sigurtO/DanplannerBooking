@@ -2,6 +2,7 @@
 @using DanplannerBooking.Application.Dtos.Space
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
+@attribute [Authorize(Roles = "Admin")]
 
 <h3>Available Spaces</h3>
 

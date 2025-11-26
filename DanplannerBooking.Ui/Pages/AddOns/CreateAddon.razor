@@ -2,6 +2,7 @@
 @using DanplannerBooking.Application.Dtos.AddOn
 @inject NavigationManager NavigationManager
 @inject HttpClient Http
+@attribute [Authorize(Roles = "Admin")]
 
 <h3>Create New Add-On</h3>
 
