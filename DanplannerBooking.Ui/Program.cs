@@ -24,13 +24,15 @@ builder.Services.AddBlazoredLocalStorage();
 // ---------------------------------------------------
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthenticationStateProvider>();
+    BaseAddress = new Uri("https://localhost:7061/")
+});
 
 //mudblazor
-builder.Services.AddMudServices();
-// ---------------------------------------------------
 // Token Handler (tilf�jer JWT til alle requests)
 // ---------------------------------------------------
 builder.Services.AddTransient<TokenAuthorizationHandler>();
+// ---------------------------------------------------
+builder.Services.AddBlazoredLocalStorage();
 
 // ---------------------------------------------------
 // HttpClient med handler

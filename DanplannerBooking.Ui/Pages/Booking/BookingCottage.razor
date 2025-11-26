@@ -13,37 +13,37 @@
 <AuthorizeView Roles="Admin">
     <Authorized Context="adminContent">
 
-                        <div class="mb-3">
-                            <label>Assign Admin:</label>
-                            <InputSelect @bind-Value="newBooking.UserId" class="form-control">
-                                <option value="">-- Select Admin --</option>
-                                @foreach (var admin in adminUsers)
-                                {
-                                    <option value="@admin.Id">@admin.Name (@admin.Email)</option>
-                                }
-                            </InputSelect>
-                        </div>
 
-                        <p>Unavailable ranges: @unavailableRanges.Count</p>
+        <h3>Book Your Cottage</h3>
 
-                        <BookingDateRangePicker @bind-SelectedRange="BookingRange"
-                                                UnavailableRanges="unavailableRanges" />
+        @if (cottage == null || addOns == null || adminUsers == null)
+        {
+            <p>Loading booking form...</p>
+        }
+        else
+        {
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-body">
+                            <h4>@cottage.Name</h4>
+                            <p><strong>Price Per Night:</strong> @cottage.PricePerNight.ToString("C")</p>
+                            <p><strong>Max Capacity:</strong> 6 people</p>
 
-                        <div class="mb-3 mt-3">
-                            <label>Number of People:</label>
-                            <InputNumber @bind-Value="newBooking.NumberOfPeople" class="form-control" />
-                        </div>
+                            <EditForm Model="@newBooking" OnValidSubmit="SubmitBooking">
+                                <DataAnnotationsValidator />
+                                <ValidationSummary />
 
-                        <div class="mb-3">
-                            <label>Add-ons & Extras:</label>
-                            @foreach (var addon in addOns)
-                            {
-                                <div class="form-check">
-                                    <input type="checkbox" class="form-check-input"
-                                           @bind="addonSelections[addon.Id]" />
-                                    <label class="form-check-label">
-                                        <strong>@addon.Name</strong> - @addon.Description (@addon.Price.ToString("C"))
-                                    </label>
+
+                                <div class="mb-3">
+                                    <label>Assign Admin:</label>
+                                    <InputSelect @bind-Value="newBooking.UserId" class="form-control">
+                                        <option value="">-- Select Admin --</option>
+                                        @foreach (var admin in adminUsers)
+                                        {
+                                            <option value="@admin.Id">@admin.Name (@admin.Email)</option>
+                                        }
+                                    </InputSelect>
                                 </div>
 
                                 <div class="mb-3">
@@ -108,31 +108,6 @@
             </div>
         }
 
-        <div class="col-md-4">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5>Booking Summary</h5>
-                    <p><strong>Cottage:</strong> @cottage.Name</p>
-                    <p><strong>Guests:</strong> @newBooking.NumberOfPeople</p>
-                    <p><strong>Dates:</strong> @newBooking.DateStart.ToShortDateString() – @newBooking.DateEnd.ToShortDateString()</p>
-                    <p><strong>Add-ons:</strong></p>
-                    <ul>
-                        @foreach (var addon in addOns.Where(a => addonSelections.ContainsKey(a.Id) && addonSelections[a.Id]))
-                        {
-                            <li>@addon.Name (@addon.Price.ToString("C"))</li>
-                        }
-                    </ul>
-                    <p><strong>Total Price:</strong> @newBooking.TotalPrice.ToString("C")</p>
-
-                    @if (!string.IsNullOrWhiteSpace(error))
-                    {
-                        <p class="text-danger">@error</p>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
-}
     </Authorized>
 
     <NotAuthorized>
@@ -177,7 +152,6 @@
         cottage = await Http.GetFromJsonAsync<CottageResponseDto>($"api/cottage/{cottageId}");
         addOns = await Http.GetFromJsonAsync<List<AddOnResponseDto>>("api/addon");
         adminUsers = await Http.GetFromJsonAsync<List<UserResponseDto>>("api/user/admin");
-        unavailableRanges = await Http.GetFromJsonAsync<List<BookingRangeDto>>($"api/booking/unavailable/{cottageId}");
 
         if (addOns != null)
         {
@@ -190,8 +164,8 @@
         newBooking.DateStart = DateTime.Today;
         newBooking.DateEnd = DateTime.Today.AddDays(7);
         newBooking.NumberOfPeople = 2;
-        newBooking.UserId = Guid.NewGuid(); // TODO: rigtig bruger
-        newBooking.TotalPrice = cottage.PricePerNight;
+        newBooking.UserId = Guid.NewGuid(); // placeholder
+        newBooking.TotalPrice = cottage?.PricePerNight ?? 0;
     }
 
     private async Task SubmitBooking()
