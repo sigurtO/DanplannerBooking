@@ -207,9 +207,9 @@
     private string? SelectedCampsiteId;
     private UiCampsite? SelectedCampsite => Campsites.FirstOrDefault(c => c.Id == SelectedCampsiteId);
     private string BgImageBase64 =>
-        SelectedCampsite?.Image != null && SelectedCampsite.Image.Length > 0
-            ? $"data:image/png;base64,{Convert.ToBase64String(SelectedCampsite.Image)}"
-            : "images/campsite.jpg"; // fallback
+        (SelectedCampsite?.Image?.Length > 0)
+        ? $"data:image/png;base64,{Convert.ToBase64String(SelectedCampsite.Image)}"
+        : null;
 
     private bool DisabledNoCampsite => string.IsNullOrEmpty(SelectedCampsiteId);
     private bool DisabledNoNew => DisabledNoCampsite || !Units.Any(u => !u.FromDb);

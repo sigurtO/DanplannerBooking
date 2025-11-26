@@ -220,9 +220,10 @@ else
         Campsites.FirstOrDefault(c => c.Id == SelectedCampsiteId);
 
     private string BgImageBase64 =>
-        SelectedCampsite?.Image != null && SelectedCampsite.Image.Length > 0
+        (SelectedCampsite?.Image?.Length > 0)
             ? $"data:image/png;base64,{Convert.ToBase64String(SelectedCampsite.Image)}"
-            : "images/campsite.jpg";
+            : null;
+
 
     private List<UnitVm> Units = new();
     private UnitVm? Selected;
