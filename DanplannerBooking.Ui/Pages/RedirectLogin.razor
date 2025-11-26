@@ -1,0 +1,28 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthProvider
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        // Hent den nuværende URL (så vi kan vende tilbage efter login)
+        var returnUrl = Nav.ToBaseRelativePath(Nav.Uri);
+        if (!returnUrl.StartsWith("/"))
+        {
+            returnUrl = "/" + returnUrl;
+        }
+
+        // Hvis brugeren IKKE er logget ind → send til login
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            Nav.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}", forceLoad: true);
+            return;
+        }
+
+        // Hvis brugeren er logget ind men mangler rolle → send til forsiden
+        Nav.NavigateTo("/", forceLoad: true);
+    }
+}

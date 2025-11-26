@@ -1,5 +1,6 @@
 ﻿@page "/campsites"
 @using DanplannerBooking.Application.Dtos.Campsite
+@attribute [Authorize(Roles = "Admin")]
 
 <h3>All Campsites</h3>
 
