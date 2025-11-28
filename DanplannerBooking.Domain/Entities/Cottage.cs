@@ -1,4 +1,6 @@
-﻿namespace DanplannerBooking.Domain.Entities
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace DanplannerBooking.Domain.Entities
 {
     public class Cottage
     {
@@ -27,5 +29,8 @@
         public decimal PricePerNight { get; set; }
 
         public byte[] Image { get; set; }
+
+        [Timestamp]
+        public byte[] RowVersion { get; set; }
     }
 }

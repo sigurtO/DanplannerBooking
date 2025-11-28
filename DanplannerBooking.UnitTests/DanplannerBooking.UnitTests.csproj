@@ -19,8 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DanplannerBooking.Api\DanplannerBooking.Api.csproj" />
     <ProjectReference Include="..\DanplannerBooking.Application\DanplannerBooking.Application.csproj" />
     <ProjectReference Include="..\DanplannerBooking.Domain\DanplannerBooking.Domain.csproj" />
+    <ProjectReference Include="..\DanplannerBooking.Infrastructure\DanplannerBooking.Infrastructure.csproj" />
+    <ProjectReference Include="..\DanplannerBooking.Ui\DanplannerBooking.Ui.csproj" />
   </ItemGroup>
 
   <ItemGroup>

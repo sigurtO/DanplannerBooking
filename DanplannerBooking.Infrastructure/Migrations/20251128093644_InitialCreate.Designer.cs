@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DanplannerBooking.Infrastructure.Migrations
 {
     [DbContext(typeof(DbContextBooking))]
-    [Migration("20251125102628_InitialCreate")]
+    [Migration("20251128093644_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -228,6 +228,12 @@ namespace DanplannerBooking.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("decimal(18,2)")
                         .HasDefaultValue(0m);
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
                     b.Property<int>("X")
                         .ValueGeneratedOnAdd()

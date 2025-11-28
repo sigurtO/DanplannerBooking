@@ -40,6 +40,7 @@ namespace DanplannerBooking.Infrastructure.Repository
             var existingCottage = await _context.Cottages.FindAsync(id);
             if (existingCottage == null) return false;
 
+            _context.Entry(existingCottage).Property("RowVersion").OriginalValue = cottageUpdated.RowVersion;
             existingCottage.Name = cottageUpdated.Name;
             existingCottage.Location = cottageUpdated.Location;
             existingCottage.Description = cottageUpdated.Description;
@@ -53,8 +54,15 @@ namespace DanplannerBooking.Infrastructure.Repository
             existingCottage.Image = cottageUpdated.Image;
             existingCottage.CampsiteId = cottageUpdated.CampsiteId;
 
-            await _context.SaveChangesAsync();
-            return true;
+            try
+            {
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                throw;
+            }
         }
 
         public async Task<bool> DeleteAsync(Guid id)

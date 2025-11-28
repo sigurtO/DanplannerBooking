@@ -130,7 +130,7 @@ else
 @code {
     [Parameter] public Guid cottageId { get; set; }
     private CottageResponseDto? cottage;
-    private CottageDto? editCottage;
+    private CottageUpdateDto? editCottage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -146,7 +146,7 @@ else
     {
         if (cottage == null) return;
 
-        editCottage = new CottageDto
+        editCottage = new CottageUpdateDto
         {
             CampsiteId = cottage.CampsiteId,
             Name = cottage.Name,
@@ -159,7 +159,8 @@ else
             HasWiFi = cottage.HasWiFi,
             IsAvailable = cottage.IsAvailable,
             PricePerNight = cottage.PricePerNight,
-            Image = cottage.Image
+            Image = cottage.Image,
+            RowVersion = cottage.RowVersion
         };
     }
 

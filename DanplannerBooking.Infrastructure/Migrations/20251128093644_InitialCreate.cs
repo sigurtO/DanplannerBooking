@@ -84,7 +84,8 @@ namespace DanplannerBooking.Infrastructure.Migrations
                     HasWiFi = table.Column<bool>(type: "bit", nullable: false),
                     IsAvailable = table.Column<bool>(type: "bit", nullable: false),
                     PricePerNight = table.Column<decimal>(type: "decimal(18,2)", nullable: false, defaultValue: 0m),
-                    Image = table.Column<byte[]>(type: "varbinary(max)", nullable: false)
+                    Image = table.Column<byte[]>(type: "varbinary(max)", nullable: false),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
                 },
                 constraints: table =>
                 {
