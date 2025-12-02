@@ -12,7 +12,7 @@
         var returnUrl = Nav.ToBaseRelativePath(Nav.Uri);
         if (!returnUrl.StartsWith("/"))
         {
-            returnUrl = "/" + returnUrl;
+            returnUrl = "/login" + returnUrl;
         }
 
         // Hvis brugeren IKKE er logget ind → send til login
@@ -23,6 +23,6 @@
         }
 
         // Hvis brugeren er logget ind men mangler rolle → send til forsiden
-        Nav.NavigateTo("/", forceLoad: true);
+        Nav.NavigateTo("/login", forceLoad: true);
     }
 }
