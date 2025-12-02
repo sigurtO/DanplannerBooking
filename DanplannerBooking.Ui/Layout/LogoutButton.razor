@@ -1,0 +1,37 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthProvider
+@inject NavigationManager Nav
+
+<AuthorizeView>
+    <Authorized>
+        <button class="@CssClass" @onclick="OnLogoutClicked">
+            @ButtonText
+        </button>
+    </Authorized>
+</AuthorizeView>
+
+@code {
+    // CSS-klassen så du kan style den forskelligt afhængigt af hvor du bruger den
+    [Parameter]
+    public string CssClass { get; set; } = "btn btn-link nav-link text-start";
+
+    // Teksten på knappen
+    [Parameter]
+    public string ButtonText { get; set; } = "Log ud";
+
+    // Hvor skal vi hen efter logout?
+    [Parameter]
+    public string RedirectUrl { get; set; } = "/login";
+
+    private async Task OnLogoutClicked()
+    {
+        // Vi ved din provider er JwtAuthenticationStateProvider
+        if (AuthProvider is JwtAuthenticationStateProvider jwtProvider)
+        {
+            await jwtProvider.MarkUserAsLoggedOut();
+        }
+
+        // Efter logout → send bruger et sted hen (typisk login eller forsiden)
+        Nav.NavigateTo(RedirectUrl, forceLoad: true);
+    }
+}
