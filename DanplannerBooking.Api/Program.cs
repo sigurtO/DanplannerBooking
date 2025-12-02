@@ -4,6 +4,7 @@ using DanplannerBooking.Infrastructure.Repository;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,9 +33,10 @@ builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 // --------------------
 builder.Services.AddAuthorization(options =>
 {
-    // Politik hvis du vil bruge [Authorize(Policy = "AdminOnly")]
-    options.AddPolicy("AdminOnly", p => p.RequireClaim("IsAdmin", "true"));
+    // Så både [Authorize(Roles = "Admin")] og [Authorize(Policy = "AdminOnly")] kan bruges
+    options.AddPolicy("AdminOnly", p => p.RequireRole("Admin"));
 });
+
 
 var jwt = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwt["Key"]!);
@@ -56,9 +58,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(key),
 
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
+            ClockSkew = TimeSpan.Zero,
+
+            RoleClaimType = ClaimTypes.Role
         };
     });
+
 
 // --------------------
 // CORS: allow UI origins
