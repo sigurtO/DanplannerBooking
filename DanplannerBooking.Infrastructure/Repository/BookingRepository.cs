@@ -64,6 +64,7 @@ namespace DanplannerBooking.Infrastructure.Repository
             if (existingBooking == null) return false;
 
             existingBooking.UserId = updatedBooking.UserId;
+            existingBooking.Name = updatedBooking.Name;
             existingBooking.NumberOfPeople = updatedBooking.NumberOfPeople;
             existingBooking.DateStart = updatedBooking.DateStart;
             existingBooking.DateEnd = updatedBooking.DateEnd;
@@ -81,7 +82,7 @@ namespace DanplannerBooking.Infrastructure.Repository
                 .Include(b => b.User)
                 .Select(b => new BookingDashboardDto(
                     b.Id,
-                    b.User.Name,
+                    b.Name,
                     b.DateStart,
                     b.DateEnd
                 ))

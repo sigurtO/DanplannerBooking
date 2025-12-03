@@ -27,7 +27,7 @@ namespace DanplannerBooking.Api.Controllers
             public Guid Id { get; set; }
             public DateTime DateStart { get; set; }
             public DateTime DateEnd { get; set; }
-            public string UserName { get; set; } = "";
+            public string Name { get; set; }
             public int NumberOfPeople { get; set; }
             public decimal TotalPrice { get; set; }
         }
@@ -95,7 +95,7 @@ namespace DanplannerBooking.Api.Controllers
                     Id = b.Id,
                     DateStart = b.DateStart,
                     DateEnd = b.DateEnd,
-                    UserName = b.User?.Name ?? string.Empty,
+                    Name = b.Name,
                     NumberOfPeople = b.NumberOfPeople,
                     TotalPrice = b.TotalPrice
                 })
@@ -112,6 +112,7 @@ namespace DanplannerBooking.Api.Controllers
             {
                 Id = Guid.NewGuid(),
                 UserId = bookingDto.UserId,
+                Name = bookingDto.Name,
                 NumberOfPeople = bookingDto.NumberOfPeople,
                 DateStart = bookingDto.DateStart,
                 DateEnd = bookingDto.DateEnd,
@@ -131,6 +132,7 @@ namespace DanplannerBooking.Api.Controllers
             var updatedBooking = new Booking
             {
                 UserId = updatedDto.UserId,
+                Name = updatedDto.Name,
                 NumberOfPeople = updatedDto.NumberOfPeople,
                 DateStart = updatedDto.DateStart,
                 DateEnd = updatedDto.DateEnd,
