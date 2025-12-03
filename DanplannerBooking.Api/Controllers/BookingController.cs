@@ -1,6 +1,7 @@
 ﻿using DanplannerBooking.Application.Dtos.Booking;
 using DanplannerBooking.Application.Interfaces;
 using DanplannerBooking.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -105,6 +106,7 @@ namespace DanplannerBooking.Api.Controllers
         }
 
         // POST: api/booking
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> CreateBooking([FromBody] BookingCreateCottageDto bookingDto)
         {
@@ -126,6 +128,7 @@ namespace DanplannerBooking.Api.Controllers
         }
 
         // PUT: api/booking/{id}
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateBooking(Guid id, [FromBody] BookingDto updatedDto)
         {
@@ -151,6 +154,7 @@ namespace DanplannerBooking.Api.Controllers
         }
 
         // DELETE: api/booking/{id}
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteBooking(Guid id)
         {

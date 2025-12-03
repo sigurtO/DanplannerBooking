@@ -1,6 +1,7 @@
 ﻿using DanplannerBooking.Application.Dtos.Space;
 using DanplannerBooking.Application.Interfaces;
 using DanplannerBooking.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DanplannerBooking.Api.Controllers
@@ -34,6 +35,7 @@ namespace DanplannerBooking.Api.Controllers
             return Ok(space);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> CreateSpace([FromBody] CreateSpaceDto spaceDto)
         {
@@ -57,8 +59,8 @@ namespace DanplannerBooking.Api.Controllers
             return CreatedAtAction(nameof(GetSpaceById), new { id = newSpace.Id }, null);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
-        // [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> UpdateSpace(Guid id, [FromBody] CreateSpaceDto updatedDto)
         {
             var updatedSpace = new Space
@@ -85,8 +87,8 @@ namespace DanplannerBooking.Api.Controllers
             return NoContent();
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
-        // [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> DeleteSpace(Guid id)
         {
             var result = await _spaceRepository.DeleteAsync(id);

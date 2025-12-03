@@ -1,9 +1,11 @@
 using DanplannerBooking.Application.Interfaces;
+using DanplannerBooking.Domain.Entities;
 using DanplannerBooking.Infrastructure.Context;
 using DanplannerBooking.Infrastructure.Repository;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,9 +34,10 @@ builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 // --------------------
 builder.Services.AddAuthorization(options =>
 {
-    // Politik hvis du vil bruge [Authorize(Policy = "AdminOnly")]
-    options.AddPolicy("AdminOnly", p => p.RequireClaim("IsAdmin", "true"));
+    // Så både [Authorize(Roles = "Admin")] og [Authorize(Policy = "AdminOnly")] kan bruges
+    options.AddPolicy("AdminOnly", p => p.RequireRole("Admin"));
 });
+
 
 var jwt = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwt["Key"]!);
@@ -56,9 +59,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(key),
 
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
+            ClockSkew = TimeSpan.Zero,
+
+            RoleClaimType = ClaimTypes.Role
         };
     });
+
 
 // --------------------
 // CORS: allow UI origins
@@ -80,6 +86,34 @@ builder.Services.AddCors(opt =>
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<DbContextBooking>();
+
+    // Sikrer at DB + migrations er kørt
+    db.Database.Migrate();
+
+    // Hvis der ikke findes nogen admin-bruger endnu, så lav én
+    if (!db.Users.Any(u => u.Role == "Admin"))
+    {
+        var admin = new User
+        {
+            Id = Guid.NewGuid(),
+            Name = "Hardcoded Admin",
+            Email = "admin@admin.com",
+            Password = "1234",   // matcher din Login-logik (ingen hashing endnu)
+            Phone = "12345678",
+            Country = "Denmark",
+            Language = "da",
+            Role = "Admin"
+        };
+
+        db.Users.Add(admin);
+        db.SaveChanges();
+    }
+}
+
 
 // --------------------
 // Middleware pipeline
