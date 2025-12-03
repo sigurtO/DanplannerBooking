@@ -6,7 +6,7 @@
 
 <h2>🗺️ Kort-editor</h2>
 <p class="text-muted">
-    Vælg campingplads, opret enheder, træk markører rundt på kortet og gem layoutet.
+    Vælg campingplads, træk markører rundt på kortet og gem layoutet.
 </p>
 
 <div class="mb-3" style="display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap;">
@@ -46,8 +46,7 @@
     </div>
 
     <div class="alert alert-info mt-4" style="flex:1; min-width:280px;">
-        Træk markører direkte på kortet for at flytte dem.
-        Brug "Placer DB-enhed" for at give DB-enheder en position.
+        Træk markører direkte på kortet for at flytte enhederne. Du kan finjustere koordinaterne for den valgte enhed i panelet til venstre og gemme layoutet i databasen.
     </div>
 </div>
 
@@ -96,8 +95,7 @@
 
             <h5>Opret DB-enhed</h5>
             <p class="text-muted" style="font-size:.85rem;">
-                Opret nye pladser og hytter på deres respektive sider.
-                Herefter kan de placeres på kortet nedenfor.
+                Opret nye pladser og hytter på deres respektive sider. Editor-siden bruges kun til at justere placeringen af eksisterende enheder på kortet.
             </p>
 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
@@ -124,30 +122,11 @@
                     ↻ Opdater
                 </button>
             }
-        </div>
 
-        <div class="card mt-3" style="padding:12px;">
-            <h5>Placer DB-enhed</h5>
-            <p class="text-muted" style="font-size:.85rem;">
-                Vælg en DB-enhed uden position, og klik "Placer markør på kort".
-            </p>
+            <hr />
 
-            <select class="form-select" @bind="SelectedOptionId" disabled="@DisabledNoCampsite">
-                <option value="">-- vælg enhed uden position --</option>
-                @foreach (var o in Options)
-                {
-                    <option value="@o.Id.ToString()">@o.Name (@o.Type)</option>
-                }
-            </select>
-
-            <button class="btn btn-outline-primary mt-2"
-                    @onclick="StartPlaceOnMap"
-                    disabled="@DisabledNoCampsite || Options.Count == 0">
-                Placer markør på kort
-            </button>
-
-            <div class="mt-3">
-                <button class="btn btn-success" @onclick="SaveLayout">
+            <div class="mt-2">
+                <button class="btn btn-success" @onclick="SaveLayout" disabled="@DisabledNoCampsite || !Units.Any()">
                     💾 Gem layout i DB
                 </button>
             </div>
@@ -221,15 +200,6 @@
         public Guid CampsiteId { get; set; }
     }
 
-    private sealed class ApiUnitOptionDto
-    {
-        public Guid Id { get; set; }
-        public string Name { get; set; } = "";
-        public string Type { get; set; } = "";
-        public bool HasPosition { get; set; }
-        public Guid CampsiteId { get; set; }
-    }
-
     // ---------- UI modeller ----------
     private sealed class UiCampsite
     {
@@ -249,14 +219,6 @@
         public bool FromDb { get; set; }
     }
 
-    private sealed class UnitOption
-    {
-        public Guid Id { get; set; }
-        public string Name { get; set; } = "";
-        public string Type { get; set; } = "";
-        public Guid CampsiteId { get; set; }
-    }
-
     // ---------- State ----------
     private List<UiCampsite> Campsites { get; set; } = new();
     private string? SelectedCampsiteIdString { get; set; }
@@ -270,9 +232,6 @@
 
     private List<EditableUnit> Units { get; set; } = new();
     private EditableUnit? Selected { get; set; }
-
-    private List<UnitOption> Options { get; set; } = new();
-    private string? SelectedOptionId { get; set; }
 
     private string StatusMessage { get; set; } = "";
     private string StatusKind { get; set; } = "info";
@@ -322,7 +281,6 @@
     private async Task ReloadForSelectedCampsite()
     {
         Units.Clear();
-        Options.Clear();
         Selected = null;
 
         if (SelectedCampsiteId is null)
@@ -332,7 +290,6 @@
         }
 
         await LoadUnits();
-        await LoadOptions();
 
         StateHasChanged();
     }
@@ -354,25 +311,6 @@
             Y = u.Y,
             FromDb = true
         }).ToList();
-    }
-
-    private async Task LoadOptions()
-    {
-        if (SelectedCampsiteId is null) return;
-
-        var url = $"api/units/options?campsiteId={SelectedCampsiteId}";
-        var data = await Http.GetFromJsonAsync<List<ApiUnitOptionDto>>(url) ?? new();
-
-        Options = data
-            .Where(o => !o.HasPosition)
-            .Select(o => new UnitOption
-            {
-                Id = o.Id,
-                Name = o.Name,
-                Type = o.Type,
-                CampsiteId = o.CampsiteId
-            })
-            .ToList();
     }
 
     // ---------- UI-hændelser ----------
@@ -406,52 +344,10 @@
         if (u is not null)
         {
             Units.Remove(u);
-            if (u.FromDb)
-            {
-                // DB-enheder der fjernes fra kortet kunne evt. tilføjes til Options igen.
-                Options.Add(new UnitOption
-                {
-                    Id = u.Id,
-                    Name = u.Name,
-                    Type = u.Type,
-                    CampsiteId = u.CampsiteId
-                });
-            }
         }
 
         if (Selected?.Id == id)
             Selected = null;
-
-        StateHasChanged();
-    }
-
-    private async Task StartPlaceOnMap()
-    {
-        if (SelectedCampsiteId is null || string.IsNullOrEmpty(SelectedOptionId))
-            return;
-
-        if (!Guid.TryParse(SelectedOptionId, out var optId))
-            return;
-
-        var opt = Options.FirstOrDefault(o => o.Id == optId);
-        if (opt is null) return;
-
-        try
-        {
-            // map.js forventer typisk (id, type)
-            await JS.InvokeVoidAsync(
-                "CampsiteMap.startPlaceNewMarker",
-                opt.Id.ToString(),
-                opt.Type);
-
-            StatusKind = "info";
-            StatusMessage = $"Placer markør for: {opt.Name}";
-        }
-        catch (Exception ex)
-        {
-            StatusKind = "danger";
-            StatusMessage = "Fejl ved start af placering: " + ex.Message;
-        }
 
         StateHasChanged();
     }
@@ -545,40 +441,6 @@
         {
             StatusKind = "danger";
             StatusMessage = "Fejl ved klik på markør: " + ex.Message;
-        }
-
-        StateHasChanged();
-        return Task.CompletedTask;
-    }
-
-    [JSInvokable]
-    public Task OnNewMarkerPlaced(Guid id, int x, int y)
-    {
-        try
-        {
-            var opt = Options.FirstOrDefault(o => o.Id == id);
-            if (opt is null)
-                return Task.CompletedTask;
-
-            var unit = new EditableUnit
-            {
-                Id = opt.Id,
-                CampsiteId = opt.CampsiteId,
-                Name = opt.Name,
-                Type = opt.Type,
-                X = x,
-                Y = y,
-                FromDb = true
-            };
-
-            Units.Add(unit);
-            Options.Remove(opt);
-            Selected = unit;
-        }
-        catch (Exception ex)
-        {
-            StatusKind = "danger";
-            StatusMessage = "Fejl ved placering af markør: " + ex.Message;
         }
 
         StateHasChanged();
