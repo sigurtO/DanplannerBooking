@@ -4,6 +4,7 @@ using DanplannerBooking.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,15 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DanplannerBooking.Infrastructure.Migrations
 {
     [DbContext(typeof(DbContextBooking))]
-    partial class DbContextBookingModelSnapshot : ModelSnapshot
+<<<<<<<< HEAD:DanplannerBooking.Infrastructure/Migrations/20251201114831_InitialCreate.Designer.cs
+    [Migration("20251201114831_InitialCreate")]
+========
+    [Migration("20251202085403_InitialCreate")]
+>>>>>>>> 7958e7d5fcde08ca284dddb252622095ca8b9278:DanplannerBooking.Infrastructure/Migrations/20251202085403_InitialCreate.Designer.cs
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

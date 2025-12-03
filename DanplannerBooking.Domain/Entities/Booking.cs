@@ -8,6 +8,7 @@ namespace DanplannerBooking.Domain.Entities
         public Guid UserId { get; set; }
         public User User { get; set; }
 
+        public string Name { get; set; }
         public int NumberOfPeople { get; set; }
         public DateTime DateStart { get; set; }
         public DateTime DateEnd { get; set; }

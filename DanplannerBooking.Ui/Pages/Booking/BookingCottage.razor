@@ -38,6 +38,11 @@ else
                             </InputSelect>
                         </div>
 
+                        <div>
+							<label>Name of Booker</label>
+							<InputText @bind-Value="newBooking.Name" class="form-control" />
+                        </div>
+
                         <p>Unavailable ranges: @unavailableRanges.Count</p>
 
                         <BookingDateRangePicker @bind-SelectedRange="BookingRange"
@@ -136,6 +141,7 @@ else
         }
 
         newBooking.CottageId = cottageId;
+		newBooking.Name = cottage.Name;
         newBooking.DateStart = DateTime.Today;
         newBooking.DateEnd = DateTime.Today.AddDays(7);
         newBooking.NumberOfPeople = 2;

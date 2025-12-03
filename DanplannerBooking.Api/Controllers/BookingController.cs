@@ -1,6 +1,7 @@
 ﻿using DanplannerBooking.Application.Dtos.Booking;
 using DanplannerBooking.Application.Interfaces;
 using DanplannerBooking.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -27,7 +28,7 @@ namespace DanplannerBooking.Api.Controllers
             public Guid Id { get; set; }
             public DateTime DateStart { get; set; }
             public DateTime DateEnd { get; set; }
-            public string UserName { get; set; } = "";
+            public string Name { get; set; }
             public int NumberOfPeople { get; set; }
             public decimal TotalPrice { get; set; }
         }
@@ -95,7 +96,7 @@ namespace DanplannerBooking.Api.Controllers
                     Id = b.Id,
                     DateStart = b.DateStart,
                     DateEnd = b.DateEnd,
-                    UserName = b.User?.Name ?? string.Empty,
+                    Name = b.Name,
                     NumberOfPeople = b.NumberOfPeople,
                     TotalPrice = b.TotalPrice
                 })
@@ -105,6 +106,7 @@ namespace DanplannerBooking.Api.Controllers
         }
 
         // POST: api/booking
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> CreateBooking([FromBody] BookingCreateCottageDto bookingDto)
         {
@@ -112,6 +114,7 @@ namespace DanplannerBooking.Api.Controllers
             {
                 Id = Guid.NewGuid(),
                 UserId = bookingDto.UserId,
+                Name = bookingDto.Name,
                 NumberOfPeople = bookingDto.NumberOfPeople,
                 DateStart = bookingDto.DateStart,
                 DateEnd = bookingDto.DateEnd,
@@ -125,12 +128,14 @@ namespace DanplannerBooking.Api.Controllers
         }
 
         // PUT: api/booking/{id}
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateBooking(Guid id, [FromBody] BookingDto updatedDto)
         {
             var updatedBooking = new Booking
             {
                 UserId = updatedDto.UserId,
+                Name = updatedDto.Name,
                 NumberOfPeople = updatedDto.NumberOfPeople,
                 DateStart = updatedDto.DateStart,
                 DateEnd = updatedDto.DateEnd,
@@ -149,6 +154,7 @@ namespace DanplannerBooking.Api.Controllers
         }
 
         // DELETE: api/booking/{id}
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteBooking(Guid id)
         {
