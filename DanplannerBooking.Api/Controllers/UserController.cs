@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using DanplannerBooking.Domain.Security;
 
 namespace DanplannerBooking.Api.Controllers
 {
@@ -65,14 +66,17 @@ namespace DanplannerBooking.Api.Controllers
 
                 // Brug den role klienten sender – fallback til "User"
                 Role = string.IsNullOrWhiteSpace(createUserDto.Role)
-            ? "User"
-            : createUserDto.Role,
+                    ? "User"
+                    : createUserDto.Role,
 
-                Password = createUserDto.Password // TODO: Hash password senere
+                // Gem hash i stedet for klartekst
+                Password = PasswordHasher.HashPassword(createUserDto.Password)
             };
+
             await _userRepository.CreateAsync(user);
             return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, null);
         }
+
 
 
         //Put api/user/me
