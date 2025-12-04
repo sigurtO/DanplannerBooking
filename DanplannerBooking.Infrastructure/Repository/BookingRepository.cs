@@ -101,6 +101,17 @@ namespace DanplannerBooking.Infrastructure.Repository
                 .ToListAsync();
         }
 
+        public async Task<List<BookingRangeDto>> GetBookedDateRangesForSpaceAsync(Guid spaceId)
+        {
+            return await _context.Bookings
+                .Where(b => b.SpaceId == spaceId)
+                .Select(b => new BookingRangeDto
+                {
+                    Start = b.DateStart.Date,
+                    End = b.DateEnd.Date
+                })
+                .ToListAsync();
+        }
 
 
     }
