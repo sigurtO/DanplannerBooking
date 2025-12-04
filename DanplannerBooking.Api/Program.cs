@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
+using DanplannerBooking.Domain.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -94,15 +95,18 @@ using (var scope = app.Services.CreateScope())
     // Sikrer at DB + migrations er kørt
     db.Database.Migrate();
 
-    // Hvis der ikke findes nogen admin-bruger endnu, så lav én
-    if (!db.Users.Any(u => u.Role == "Admin"))
+    // Find evt. eksisterende admin med den kendte email
+    var admin = db.Users.FirstOrDefault(u => u.Role == "Admin" && u.Email == "admin@admin.com");
+
+    if (admin == null)
     {
-        var admin = new User
+        // Ingen admin endnu -> opret én med hashed password
+        admin = new User
         {
             Id = Guid.NewGuid(),
             Name = "Hardcoded Admin",
             Email = "admin@admin.com",
-            Password = "1234",   // matcher din Login-logik (ingen hashing endnu)
+            Password = PasswordHasher.HashPassword("1234"),
             Phone = "12345678",
             Country = "Denmark",
             Language = "da",
@@ -112,7 +116,17 @@ using (var scope = app.Services.CreateScope())
         db.Users.Add(admin);
         db.SaveChanges();
     }
+    else
+    {
+        // Hvis admin er lavet før vi fik hashing, ligger password i klartekst
+        if (!PasswordHasher.IsHashed(admin.Password))
+        {
+            admin.Password = PasswordHasher.HashPassword(admin.Password);
+            db.SaveChanges();
+        }
+    }
 }
+
 
 
 // --------------------
