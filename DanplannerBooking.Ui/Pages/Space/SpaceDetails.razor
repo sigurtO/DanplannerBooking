@@ -44,7 +44,7 @@ else
                         @(space.MetersFromOcean.HasValue ? $"🌊 {space.MetersFromOcean} m" : "")
                     </p>
 
-                    <button class="btn btn-success">Book Now</button>
+                    <button class="btn btn-success" @onclick="NavigateToBooking">Book Now</button>
                     <p class="mt-2 text-muted">Free cancellation up to 48 hours before check-in</p>
 
                     <!-- Admin actions -->

@@ -201,6 +201,13 @@ namespace DanplannerBooking.Api.Controllers
             return Ok(ranges);
         }
 
+        // GET: api/booking/unavailable-space/{spaceId}
+        [HttpGet("unavailable-space/{spaceId}")]
+        public async Task<IActionResult> GetUnavailableDatesForSpace(Guid spaceId)
+        {
+            var ranges = await _bookingRepository.GetBookedDateRangesForSpaceAsync(spaceId);
+            return Ok(ranges);
+        }
 
 
 
