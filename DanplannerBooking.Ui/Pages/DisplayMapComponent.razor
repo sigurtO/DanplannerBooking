@@ -141,7 +141,7 @@ else
                                 @(SelectedCottage.IsAvailable ? "Ledig" : "Optaget / ikke tilgængelig")
                             </div>
 
-                            <div class="mt-2">
+                            <div class="mt-2 d-flex gap-2">
                                 <button class="btn btn-sm btn-primary" @onclick="@(() => GoToCottageDetails(SelectedCottage.Id))">
                                     🔍 Gå til hyttedetaljer
                                 </button>
@@ -179,6 +179,12 @@ else
                             <div>
                                 <span class="label fw-bold">Status:</span>
                                 @(SelectedSpace.IsAvailable ? "Ledig" : "Optaget / ikke tilgængelig")
+                            </div>
+
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-primary" @onclick="@(() => GoToSpaceDetails(SelectedSpace.Id))">
+                                    Book nu
+                                </button>
                             </div>
                         }
 
@@ -359,5 +365,10 @@ else
     private void GoToCottageDetails(Guid cottageId)
     {
         NavigationManager.NavigateTo($"/cottage/{cottageId}");
+    }
+
+    private void GoToSpaceDetails(Guid spaceId)
+    {
+        NavigationManager.NavigateTo($"/space/{spaceId}");
     }
 }

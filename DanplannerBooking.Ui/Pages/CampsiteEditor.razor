@@ -126,7 +126,8 @@
             <hr />
 
             <div class="mt-2">
-                <button class="btn btn-success" @onclick="SaveLayout" disabled="@DisabledNoCampsite || !Units.Any()">
+                <!-- altid aktiv knap -->
+                <button class="btn btn-success" @onclick="SaveLayout">
                     💾 Gem layout i DB
                 </button>
             </div>
@@ -236,7 +237,7 @@
     private string StatusMessage { get; set; } = "";
     private string StatusKind { get; set; } = "info";
 
-    private bool DisabledNoCampsite => SelectedCampsiteId is null;
+    private bool DisabledNoCampsite => string.IsNullOrWhiteSpace(SelectedCampsiteIdString);
 
     // ---------- Lifecycle ----------
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -354,10 +355,20 @@
 
     private async Task SaveLayout()
     {
+        // ekstra sikkerhed i selve metoden
         if (SelectedCampsiteId is null)
         {
             StatusKind = "warning";
             StatusMessage = "Vælg en campingplads først.";
+            StateHasChanged();
+            return;
+        }
+
+        if (!Units.Any())
+        {
+            StatusKind = "warning";
+            StatusMessage = "Der er ingen enheder på kortet at gemme.";
+            StateHasChanged();
             return;
         }
 
@@ -384,8 +395,9 @@
             }
             else
             {
+                var body = await resp.Content.ReadAsStringAsync();
                 StatusKind = "danger";
-                StatusMessage = $"Fejl ved gem: {resp.StatusCode}";
+                StatusMessage = $"Fejl ved gem: {(int)resp.StatusCode} {resp.StatusCode} - {body}";
             }
         }
         catch (Exception ex)

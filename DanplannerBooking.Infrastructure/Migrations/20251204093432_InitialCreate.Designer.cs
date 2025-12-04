@@ -12,11 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DanplannerBooking.Infrastructure.Migrations
 {
     [DbContext(typeof(DbContextBooking))]
-<<<<<<<< HEAD:DanplannerBooking.Infrastructure/Migrations/20251203101942_InitialCreate.Designer.cs
-    [Migration("20251203101942_InitialCreate")]
-========
-    [Migration("20251203092019_InitialCreate")]
->>>>>>>> master:DanplannerBooking.Infrastructure/Migrations/20251203092019_InitialCreate.Designer.cs
+    [Migration("20251204093432_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
