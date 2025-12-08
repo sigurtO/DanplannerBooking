@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DanplannerBooking.Infrastructure.Migrations
 {
     [DbContext(typeof(DbContextBooking))]
-    [Migration("20251204093432_InitialCreate")]
+    [Migration("20251208092001_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
