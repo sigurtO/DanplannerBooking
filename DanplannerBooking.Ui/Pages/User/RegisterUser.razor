@@ -58,23 +58,24 @@
 
     private async Task HandleValidSubmit()
     {
-        var response = await Http.PostAsJsonAsync("api/user/", registerUser);
+        // 🔁 nyt endpoint
+        var response = await Http.PostAsJsonAsync("api/user/register", registerUser);
+
         if (response.IsSuccessStatusCode)
         {
             registerUser = new RegisterUserDto(); // Clear the form
             showSuccessMessage = true;
 
-            // Wait briefly before redirecting
             await Task.Delay(1000);
 
             if (!string.IsNullOrWhiteSpace(returnUrl))
             {
-                // Redirect to login and preserve original returnUrl
                 NavigationManager.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}");
             }
             else
             {
-                NavigationManager.NavigateTo("/users");
+                // bedre mening at sende dem til login efter register
+                NavigationManager.NavigateTo("/login");
             }
         }
     }
