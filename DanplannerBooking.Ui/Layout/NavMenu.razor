@@ -1,51 +1,36 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
 
-<div class="top-row ps-3 navbar navbar-dark">
-	<div class="container-fluid">
-		<a class="navbar-brand" href="">DanplannerBooking.Ui</a>
-		<button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-			<span class="navbar-toggler-icon"></span>
-		</button>
-	</div>
-</div>
-
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-	<nav class="flex-column">
-
-		<!-- ALWAYS VISIBLE -->
-		<div class="nav-item px-3">
-			<NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-				<span class="bi bi-house-door-fill-nav-menu"></span> Home
-			</NavLink>
+<AuthorizeView Roles="Admin">
+	<Authorized>
+		<div class="top-row ps-3 navbar navbar-dark">
+			<div class="container-fluid">
+				<a class="navbar-brand" href="">DanplannerBooking.Ui</a>
+				<button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+					<span class="navbar-toggler-icon"></span>
+				</button>
+			</div>
 		</div>
 
-		<div class="nav-item px-3">
-			<NavLink class="nav-link" href="/login">
-				<span class="bi bi-box-arrow-in-right"></span> Login
-			</NavLink>
-		</div>
+		<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
+			<nav class="flex-column">
 
-		<div class="nav-item px-3">
-			<NavLink class="nav-link" href="/register">
-				<span class="bi bi-person-plus"></span> Register
-			</NavLink>
-		</div>
+				<!-- ALWAYS VISIBLE FOR ADMINS -->
+				<div class="nav-item px-3">
+					<NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+						<span class="bi bi-house-door-fill-nav-menu"></span> Home
+					</NavLink>
+				</div>
 
-		<div class="nav-item px-3">
-			<NavLink class="nav-link" href="/map">
-				<span class="oi oi-map"></span> Pladskort
-			</NavLink>
-		</div>
-		<div class="nav-item px-3">
-			<LogoutButton CssClass="nav-link btn btn-link text-start" ButtonText="Log ud" />
-		</div>
+				<div class="nav-item px-3">
+					<NavLink class="nav-link" href="/map">
+						<span class="oi oi-map"></span> Pladskort
+					</NavLink>
+				</div>
+				<div class="nav-item px-3">
+					<LogoutButton CssClass="nav-link btn btn-link text-start" ButtonText="Log ud" />
+				</div>
 
-
-
-		<!-- ADMIN ONLY -->
-		<AuthorizeView Roles="Admin">
-			<Authorized>
-
+				<!-- ADMIN ONLY LINKS (still inside Admin view) -->
 				<div class="nav-item px-3">
 					<NavLink class="nav-link" href="/editor">
 						<span class="oi oi-wrench"></span> Kort-editor
@@ -117,11 +102,19 @@
 					</NavLink>
 				</div>
 
-			</Authorized>
-		</AuthorizeView>
-
-	</nav>
-</div>
+			</nav>
+		</div>
+	</Authorized>
+	<NotAuthorized>
+		<!-- For non-admins show only a minimal login link so navigation area isn't empty -->
+		<div class="top-row ps-3 navbar navbar-dark">
+			<div class="container-fluid">
+				<a class="navbar-brand" href="">DanplannerBooking.Ui</a>
+				<a class="nav-link" href="/login">Login</a>
+			</div>
+		</div>
+	</NotAuthorized>
+</AuthorizeView>
 
 @code {
 	private bool collapseNavMenu = true;
