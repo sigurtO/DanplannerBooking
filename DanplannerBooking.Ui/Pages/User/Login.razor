@@ -11,7 +11,7 @@
     <div class="alert alert-danger">@errorMessage</div>
 }
 
-<div class="card p-3" style="max-width: 400px;">
+<div class="card p-3" style="max-width:400px;">
     <input class="form-control mb-2" placeholder="Email" @bind="login.Email" />
     <input class="form-control mb-2" type="password" placeholder="Password" @bind="login.Password" />
 
@@ -23,14 +23,20 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        margin: 0 auto;
-        margin-top: 100px;
+        margin:0 auto;
+        margin-top:100px;
     }
 </style>
 
 @code {
     private LoginRequestDto login = new();
     private string? errorMessage;
+    private string? returnUrl;
+
+    protected override void OnInitialized()
+    {
+        returnUrl = GetQueryParam(Nav.Uri, "returnUrl");
+    }
 
     private async Task HandleLogin()
     {
@@ -49,10 +55,44 @@
         var jwtProvider = (JwtAuthenticationStateProvider)AuthProvider;
         await jwtProvider.MarkUserAsAuthenticated(result.Token);
 
-        // Redirect based on role
+        // Redirect to returnUrl if present, else based on role
+        if (!string.IsNullOrWhiteSpace(returnUrl))
+        {
+            Nav.NavigateTo(returnUrl);
+            return;
+        }
+
         if (result.Role == "Admin")
             Nav.NavigateTo("/AdminDashboard");
         else
-            Nav.NavigateTo("/");   // booking side kommer senere
+            Nav.NavigateTo("/"); // booking side kommer senere
+    }
+
+    private static string? GetQueryParam(string uri, string param)
+    {
+        if (string.IsNullOrEmpty(uri)) return null;
+        var q = new Uri(uri).Query;
+        if (string.IsNullOrEmpty(q)) return null;
+        var pairs = q.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var p in pairs)
+        {
+            var kv = p.Split('=',2);
+            if (kv.Length >=1)
+            {
+                var key = Uri.UnescapeDataString(kv[0]);
+                if (string.Equals(key, param, StringComparison.OrdinalIgnoreCase))
+                {
+                    var value = kv.Length ==2 ? Uri.UnescapeDataString(kv[1]) : string.Empty;
+                    return value;
+                }
+            }
+        }
+        return null;
     }
 }
+
+@{ 
+    // link to register preserving returnUrl
+    var regLink = "/register" + (string.IsNullOrWhiteSpace(returnUrl) ? "" : $"?returnUrl={Uri.EscapeDataString(returnUrl)}");
+}
+<a href="@regLink"> Don't have an account? Register here.</a>

@@ -1,0 +1,208 @@
+﻿@page "/user-book-space/{spaceId:guid}"
+@using Microsoft.AspNetCore.Authorization
+@using System.Security.Claims
+@attribute [AllowAnonymous]
+@using DanplannerBooking.Application.Dtos.Space
+@using DanplannerBooking.Application.Dtos.AddOn
+@using DanplannerBooking.Application.Dtos.Booking
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
+
+<h3>Book a Space</h3>
+
+@if (space == null || addOns == null)
+{
+ <p>Loading booking form...</p>
+}
+else
+{
+ <div class="row">
+ <div class="col-md-8">
+ <div class="card mb-4 shadow-sm">
+ <div class="card-body">
+ <h4>@space.Name</h4>
+ <p><strong>Price Per Night:</strong> @space.PricePerNight.ToString("C")</p>
+ <p><strong>Location:</strong> @space.Location</p>
+
+ @if (!string.IsNullOrEmpty(error))
+ {
+ <div class="alert alert-danger">@error</div>
+ }
+
+ <EditForm Model="@newBooking" OnValidSubmit="SubmitBooking">
+ <DataAnnotationsValidator />
+ <ValidationSummary />
+
+ <div>
+ <label>Name of Booker</label>
+ <InputText @bind-Value="newBooking.Name" class="form-control" />
+ </div>
+
+ <p>Unavailable ranges: @unavailableRanges.Count</p>
+
+ <BookingDateRangePicker @bind-SelectedRange="BookingRange"
+ UnavailableRanges="unavailableRanges" />
+
+ <div class="mb-3 mt-3">
+ <label>Number of People:</label>
+ <InputNumber @bind-Value="newBooking.NumberOfPeople" class="form-control" />
+ </div>
+
+ <div class="mb-3">
+ <label>Add-ons & Extras:</label>
+ @foreach (var addon in addOns)
+ {
+ <div class="form-check">
+ <input type="checkbox" class="form-check-input"
+ @bind="addonSelections[addon.Id]" />
+ <label class="form-check-label">
+ <strong>@addon.Name</strong> - @addon.Description (@addon.Price.ToString("C"))
+ </label>
+ </div>
+ }
+ </div>
+
+ <button type="submit" class="btn btn-success">Confirm Booking</button>
+ </EditForm>
+
+ <p class="mt-3 text-muted">
+ • Free cancellation up to48 hours before check-in<br />
+ • Check-in:2:00 PM –10:00 PM<br />
+ • Check-out:11:00 AM
+ </p>
+ </div>
+ </div>
+ </div>
+
+ <div class="col-md-4">
+ <div class="card shadow-sm">
+ <div class="card-body">
+ <h5>Booking Summary</h5>
+ <p><strong>Space:</strong> @space.Name</p>
+ <p><strong>Guests:</strong> @newBooking.NumberOfPeople</p>
+ <p><strong>Dates:</strong> @newBooking.DateStart.ToShortDateString() – @newBooking.DateEnd.ToShortDateString()</p>
+ <p><strong>Add-ons:</strong></p>
+ <ul>
+ @foreach (var addon in addOns.Where(a => addonSelections.ContainsKey(a.Id) && addonSelections[a.Id]))
+ {
+ <li>@addon.Name (@addon.Price.ToString("C"))</li>
+ }
+ </ul>
+ <p><strong>Total Price:</strong> @newBooking.TotalPrice.ToString("C")</p>
+
+ @if (!string.IsNullOrWhiteSpace(error))
+ {
+ <p class="text-danger">@error</p>
+ }
+ </div>
+ </div>
+ </div>
+ </div>
+}
+
+@code {
+ [Parameter] public Guid spaceId { get; set; }
+
+ private SpaceResponseDto? space;
+ private List<AddOnResponseDto>? addOns;
+ private Dictionary<Guid, bool> addonSelections = new();
+ private BookingDto newBooking = new();
+ private List<BookingRangeDto> unavailableRanges = new();
+ private string? error;
+
+ // Wrapper around DateRange component
+ private DateRange BookingRange
+ {
+ get => new DateRange(newBooking.DateStart, newBooking.DateEnd);
+ set
+ {
+ newBooking.DateStart = value.Start ?? DateTime.Today;
+ newBooking.DateEnd = value.End ?? DateTime.Today;
+ }
+ }
+
+ protected override async Task OnInitializedAsync()
+ {
+ // load data regardless of authentication
+ space = await Http.GetFromJsonAsync<SpaceResponseDto>($"api/space/{spaceId}");
+ addOns = await Http.GetFromJsonAsync<List<AddOnResponseDto>>("api/addon");
+ unavailableRanges = await Http.GetFromJsonAsync<List<BookingRangeDto>>($"api/booking/unavailable-space/{spaceId}") ?? new List<BookingRangeDto>();
+
+ foreach (var addon in addOns ?? Enumerable.Empty<AddOnResponseDto>())
+ {
+ addonSelections[addon.Id] = false;
+ }
+
+ newBooking.SpaceId = spaceId;
+ newBooking.Name = space?.Name ?? string.Empty;
+ newBooking.DateStart = DateTime.Today;
+ newBooking.DateEnd = DateTime.Today.AddDays(7);
+ newBooking.NumberOfPeople =2;
+ newBooking.TotalPrice = space?.PricePerNight ??0m;
+
+ // if user is authenticated, set user id
+ var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+ var user = authState.User;
+ var idClaim = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? user?.FindFirst("sub")?.Value;
+ if (!string.IsNullOrEmpty(idClaim) && Guid.TryParse(idClaim, out var userGuid))
+ {
+ newBooking.UserId = userGuid;
+ }
+ }
+
+ private async Task SubmitBooking()
+ {
+ // require authenticated user at submit
+ var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+ var user = authState.User;
+ if (user?.Identity == null || !user.Identity.IsAuthenticated)
+ {
+ error = "Du skal være logget ind for at booke. Klik på 'Log ind' i menuen for at fortsætte.";
+ return;
+ }
+
+ // ensure UserId set from claims
+ var idClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? user.FindFirst("sub")?.Value;
+ if (!string.IsNullOrEmpty(idClaim) && Guid.TryParse(idClaim, out var userGuid))
+ {
+ newBooking.UserId = userGuid;
+ }
+
+ var selectedAddOns = (addOns ?? new List<AddOnResponseDto>())
+ .Where(a => addonSelections.ContainsKey(a.Id) && addonSelections[a.Id])
+ .ToList();
+
+ var nights = (newBooking.DateEnd - newBooking.DateStart).Days;
+ if (nights <=0) nights =1;
+
+ var basePrice = (space?.PricePerNight ??0m) * nights;
+ var addOnTotal = selectedAddOns.Sum(a => a.Price);
+ newBooking.TotalPrice = basePrice + addOnTotal;
+
+ // create DTO expected by API (includes selected addon ids)
+ var createDto = new BookingCreateCottageDto
+ {
+ UserId = newBooking.UserId,
+ Name = newBooking.Name,
+ NumberOfPeople = newBooking.NumberOfPeople,
+ DateStart = newBooking.DateStart,
+ DateEnd = newBooking.DateEnd,
+ TotalPrice = newBooking.TotalPrice,
+ SpaceId = newBooking.SpaceId,
+ AddOnIds = selectedAddOns.Select(a => a.Id).ToList()
+ };
+
+ var response = await Http.PostAsJsonAsync("api/booking", createDto);
+ if (response.IsSuccessStatusCode)
+ {
+ newBooking = new BookingDto();
+ NavigationManager.NavigateTo("/");
+ }
+ else
+ {
+ var details = await response.Content.ReadAsStringAsync();
+ error = $"Create failed ({(int)response.StatusCode}): {details}";
+ }
+ }
+}

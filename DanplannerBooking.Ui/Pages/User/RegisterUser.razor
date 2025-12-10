@@ -6,7 +6,7 @@
 @if (showSuccessMessage)
 {
     <div class="alert alert-success" role="alert">
-        ✅ User registered successfully! Redirecting to users page...
+        ✅ User registered successfully! Redirecting to login...
     </div>
 }
 
@@ -46,10 +46,15 @@
     <button type="submit" class="btn btn-success">Register</button>
 </EditForm>
 
-
 @code {
     private RegisterUserDto registerUser = new();
     private bool showSuccessMessage = false;
+    private string? returnUrl;
+
+    protected override void OnInitialized()
+    {
+        returnUrl = GetQueryParam(NavigationManager.Uri, "returnUrl");
+    }
 
     private async Task HandleValidSubmit()
     {
@@ -59,9 +64,40 @@
             registerUser = new RegisterUserDto(); // Clear the form
             showSuccessMessage = true;
 
-            // Wait 2 seconds before redirecting
-            await Task.Delay(2000);
-            NavigationManager.NavigateTo("/users");
+            // Wait briefly before redirecting
+            await Task.Delay(1000);
+
+            if (!string.IsNullOrWhiteSpace(returnUrl))
+            {
+                // Redirect to login and preserve original returnUrl
+                NavigationManager.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}");
+            }
+            else
+            {
+                NavigationManager.NavigateTo("/users");
+            }
         }
+    }
+
+    private static string? GetQueryParam(string uri, string param)
+    {
+        if (string.IsNullOrEmpty(uri)) return null;
+        var q = new Uri(uri).Query;
+        if (string.IsNullOrEmpty(q)) return null;
+        var pairs = q.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var p in pairs)
+        {
+            var kv = p.Split('=', 2);
+            if (kv.Length >= 1)
+            {
+                var key = Uri.UnescapeDataString(kv[0]);
+                if (string.Equals(key, param, StringComparison.OrdinalIgnoreCase))
+                {
+                    var value = kv.Length == 2 ? Uri.UnescapeDataString(kv[1]) : string.Empty;
+                    return value;
+                }
+            }
+        }
+        return null;
     }
 }
