@@ -1,0 +1,180 @@
+@page "/my-bookings"
+@using Microsoft.AspNetCore.Components.Authorization
+@attribute [Authorize]
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Nav
+
+<h3>My Bookings</h3>
+
+@if (isLoading)
+{
+ <p>Loading your bookings...</p>
+}
+else if (bookings == null || bookings.Count ==0)
+{
+ <p>You have no bookings.</p>
+}
+else
+{
+ <h5>Your booked places</h5>
+ <div class="row mb-3">
+ @foreach (var u in bookedUnits)
+ {
+ <div class="col-md-4 mb-2">
+ <div class="card p-2">
+ <div class="d-flex justify-content-between align-items-center">
+ <div>@u.Name</div>
+ @if (u.Type == "Cottage")
+ {
+ <button class="btn btn-sm btn-outline-primary" @onclick="() => GoToCottage(u.Id)">View</button>
+ }
+ else
+ {
+ <button class="btn btn-sm btn-outline-primary" @onclick="() => GoToSpace(u.Id)">View</button>
+ }
+ </div>
+ </div>
+ </div>
+ }
+ </div>
+
+ <h5>All bookings</h5>
+ <table class="table table-striped">
+ <thead>
+ <tr>
+ <th>Unit</th>
+ <th>Name</th>
+ <th>Guests</th>
+ <th>Start</th>
+ <th>End</th>
+ <th>Total</th>
+ <th>Actions</th>
+ </tr>
+ </thead>
+ <tbody>
+ @foreach (var b in bookings)
+ {
+ <tr>
+ <td>@(b.CottageName ?? b.SpaceName ?? "-")</td>
+ <td>@b.Name</td>
+ <td>@b.NumberOfPeople</td>
+ <td>@b.DateStart.ToShortDateString()</td>
+ <td>@b.DateEnd.ToShortDateString()</td>
+ <td>@b.TotalPrice.ToString("C")</td>
+ <td>
+ @if (b.CottageId.HasValue)
+ {
+ <button class="btn btn-sm btn-link" @onclick="() => GoToCottage(b.CottageId.Value)">Open unit</button>
+ }
+ else if (b.SpaceId.HasValue)
+ {
+ <button class="btn btn-sm btn-link" @onclick="() => GoToSpace(b.SpaceId.Value)">Open unit</button>
+ }
+ <button class="btn btn-danger btn-sm ms-2" @onclick="() => CancelBooking(b.Id)">Cancel</button>
+ </td>
+ </tr>
+ }
+ </tbody>
+ </table>
+}
+
+@code {
+ private List<MyBookingVm> bookings = new();
+ private bool isLoading = true;
+
+ // distinct booked units
+ private List<BookedUnit> bookedUnits = new();
+
+ protected override async Task OnInitializedAsync()
+ {
+ var auth = await AuthStateProvider.GetAuthenticationStateAsync();
+ if (auth.User?.Identity == null || !auth.User.Identity.IsAuthenticated)
+ {
+ Nav.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(Nav.Uri)}", true);
+ return;
+ }
+
+ await LoadBookings();
+ }
+
+ private async Task LoadBookings()
+ {
+ isLoading = true;
+ try
+ {
+ bookings = await Http.GetFromJsonAsync<List<MyBookingVm>>("api/booking/my") ?? new List<MyBookingVm>();
+
+ // build distinct units (Cottage preferred over Space if both present)
+ bookedUnits = bookings
+ .Select(b => new { Id = b.CottageId.HasValue ? b.CottageId : b.SpaceId, Name = b.CottageName ?? b.SpaceName, Type = b.CottageId.HasValue ? "Cottage" : "Space" })
+ .Where(x => x.Id.HasValue)
+ .GroupBy(x => x.Id.Value)
+ .Select(g => new BookedUnit { Id = g.Key, Name = g.First().Name ?? "Unit", Type = g.First().Type })
+ .ToList();
+ }
+ catch
+ {
+ bookings = new List<MyBookingVm>();
+ bookedUnits = new List<BookedUnit>();
+ }
+ finally
+ {
+ isLoading = false;
+ }
+ }
+
+ private async Task CancelBooking(Guid id)
+ {
+ var confirmed = true; // keep simple
+ if (!confirmed) return;
+
+ var response = await Http.DeleteAsync($"api/booking/{id}");
+ if (response.IsSuccessStatusCode)
+ {
+ bookings = bookings.Where(b => b.Id != id).ToList();
+ // rebuild units
+ bookedUnits = bookings
+ .Select(b => new { Id = b.CottageId.HasValue ? b.CottageId : b.SpaceId, Name = b.CottageName ?? b.SpaceName, Type = b.CottageId.HasValue ? "Cottage" : "Space" })
+ .Where(x => x.Id.HasValue)
+ .GroupBy(x => x.Id.Value)
+ .Select(g => new BookedUnit { Id = g.Key, Name = g.First().Name ?? "Unit", Type = g.First().Type })
+ .ToList();
+ }
+ else if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+ {
+ // optionally show message
+ }
+ }
+
+ private void GoToCottage(Guid id)
+ {
+ Nav.NavigateTo($"/cottage/{id}");
+ }
+
+ private void GoToSpace(Guid id)
+ {
+ Nav.NavigateTo($"/space/{id}");
+ }
+
+ private class MyBookingVm
+ {
+ public Guid Id { get; set; }
+ public string Name { get; set; }
+ public int NumberOfPeople { get; set; }
+ public DateTime DateStart { get; set; }
+ public DateTime DateEnd { get; set; }
+ public decimal TotalPrice { get; set; }
+ public Guid? CottageId { get; set; }
+ public string? CottageName { get; set; }
+ public Guid? SpaceId { get; set; }
+ public string? SpaceName { get; set; }
+ }
+
+ private class BookedUnit
+ {
+ public Guid Id { get; set; }
+ public string? Name { get; set; }
+ public string Type { get; set; }
+ }
+}

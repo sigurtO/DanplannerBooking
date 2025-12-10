@@ -3,35 +3,35 @@
 @inject NavigationManager Nav
 
 <AuthorizeView>
-    <Authorized>
-        <button class="@CssClass" @onclick="OnLogoutClicked">
-            @ButtonText
-        </button>
-    </Authorized>
+ <Authorized>
+ <a class="@CssClass" href="#" @onclick="OnLogoutClicked" @onclick:preventDefault="true">
+ @ButtonText
+ </a>
+ </Authorized>
 </AuthorizeView>
 
 @code {
-    // CSS-klassen så du kan style den forskelligt afhængigt af hvor du bruger den
-    [Parameter]
-    public string CssClass { get; set; } = "btn btn-link nav-link text-start";
+ // CSS-klassen så du kan style den forskelligt afhængigt af hvor du bruger den
+ [Parameter]
+ public string CssClass { get; set; } = "nav-link";
 
-    // Teksten på knappen
-    [Parameter]
-    public string ButtonText { get; set; } = "Log ud";
+ // Teksten på knappen
+ [Parameter]
+ public string ButtonText { get; set; } = "Log ud";
 
-    // Hvor skal vi hen efter logout?
-    [Parameter]
-    public string RedirectUrl { get; set; } = "/login";
+ // Hvor skal vi hen efter logout?
+ [Parameter]
+ public string RedirectUrl { get; set; } = "/login";
 
-    private async Task OnLogoutClicked()
-    {
-        // Vi ved din provider er JwtAuthenticationStateProvider
-        if (AuthProvider is JwtAuthenticationStateProvider jwtProvider)
-        {
-            await jwtProvider.MarkUserAsLoggedOut();
-        }
+ private async Task OnLogoutClicked()
+ {
+ // Vi ved din provider er JwtAuthenticationStateProvider
+ if (AuthProvider is JwtAuthenticationStateProvider jwtProvider)
+ {
+ await jwtProvider.MarkUserAsLoggedOut();
+ }
 
-        // Efter logout → send bruger et sted hen (typisk login eller forsiden)
-        Nav.NavigateTo(RedirectUrl, forceLoad: true);
-    }
+ // Efter logout → send bruger et sted hen (typisk login eller forsiden)
+ Nav.NavigateTo(RedirectUrl, forceLoad: true);
+ }
 }
