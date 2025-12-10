@@ -1,12 +1,7 @@
 ﻿using DanplannerBooking.Domain.Entities;
 using DanplannerBooking.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
-using Moq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Xunit;
 
 namespace DanplannerBooking.UnitTests;
 
@@ -18,12 +13,11 @@ public class TestBase
         var options = new DbContextOptionsBuilder<DbContextBooking>()
             .UseSqlServer("Server=localhost,1435;Database=DanplannerBookingDockerDb;User Id=sa;Password=MySqlServer123!;TrustServerCertificate=True;")
             .Options;
-        //Arange: create and save a new entity
-        Guid campsiteId;
+
         Guid cottageId;
 
+        // Arrange: Opret en campsite + cottage og gem dem rigtigt
         using (var context = new DbContextBooking(options))
-        using (var transaction = await context.Database.BeginTransactionAsync())
         {
             var campsite = new Campsite
             {
@@ -33,7 +27,6 @@ public class TestBase
                 Image = Array.Empty<byte>()
             };
             context.Campsites.Add(campsite);
-            await context.SaveChangesAsync();
 
             var cottage = new Cottage
             {
@@ -45,27 +38,27 @@ public class TestBase
                 Image = Array.Empty<byte>()
             };
             context.Cottages.Add(cottage);
+
             await context.SaveChangesAsync();
 
-            campsiteId = campsite.Id;
             cottageId = cottage.Id;
-
-            //så vi sletter de fake cottages og campsite efter testen    
-            await transaction.RollbackAsync();
         }
 
-        // Act: load the same entity twice (using fresh contexts)
-        Cottage cottage1, cottage2;
+        Cottage cottage1;
+        Cottage cottage2;
+
+        // Load samme entity i to forskellige contexts
         using (var context = new DbContextBooking(options))
         {
-            cottage1 = await context.Cottages.FirstAsync();
-        }
-        using (var context = new DbContextBooking(options))
-        {
-            cottage2 = await context.Cottages.FirstAsync();
+            cottage1 = await context.Cottages.SingleAsync(c => c.Id == cottageId);
         }
 
-        // User 1Update and saves
+        using (var context = new DbContextBooking(options))
+        {
+            cottage2 = await context.Cottages.SingleAsync(c => c.Id == cottageId);
+        }
+
+        // User 1: opdaterer og gemmer
         using (var context = new DbContextBooking(options))
         {
             cottage1.Name = "Updated Cottage";
@@ -73,7 +66,7 @@ public class TestBase
             await context.SaveChangesAsync();
         }
 
-        // User 2 tries to update and save should cause concurrency exception
+        // User 2: forsøger at gemme gammel version → forvent concurrency exception
         using (var context = new DbContextBooking(options))
         {
             cottage2.Name = "Another Update";
@@ -82,7 +75,18 @@ public class TestBase
             await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() =>
                 context.SaveChangesAsync());
         }
+
+        // Cleanup: slet test-data
+        using (var context = new DbContextBooking(options))
+        {
+            var toDelete = await context.Cottages.SingleAsync(c => c.Id == cottageId);
+            context.Cottages.Remove(toDelete);
+
+            // evt. også slette campsite hvis der ikke er andre cottages på den
+            var campsite = await context.Campsites.SingleAsync(c => c.Id == toDelete.CampsiteId);
+            context.Campsites.Remove(campsite);
+
+            await context.SaveChangesAsync();
+        }
     }
-
 }
-
