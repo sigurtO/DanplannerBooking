@@ -1,0 +1,215 @@
+﻿@page "/spaces-admin"
+@using DanplannerBooking.Application.Dtos.Space
+
+<h3>All Spaces</h3>
+
+@if (spaces == null)
+{
+    <p>Loading spaces...</p>
+}
+else if (spaces.Count == 0)
+{
+    <p>No spaces found.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Price/Night</th>
+                <th>Availability</th>
+                <th>Electricity</th>
+                <th>Distances</th>
+                <th>Image</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var space in spaces)
+            {
+                <tr>
+                    <td><strong>Name:</strong> @space.Name</td>
+                    <td>Location: @space.Location</td>
+                    <td>Description: @space.Description</td>
+                    <td>@space.PricePerNight.ToString("C")</td>
+                    <td>@(space.IsAvailable ? "✅ Available" : "❌ Unavailable")</td>
+                    <td>@(space.HasElectricity ? "⚡ Yes" : "No")</td>
+                    <td>
+                        🚽 @space.MetersFromToilet m<br />
+                        @(space.MetersFromPool.HasValue ? $"Meters from Pool {space.MetersFromPool} m" : "")
+                        <br />
+                        @(space.MetersFromPlayground.HasValue ? $"Meters from playground {space.MetersFromPlayground} m" : "")
+                        <br />
+                        @(space.MetersFromOcean.HasValue ? $"Meters from Ocean {space.MetersFromOcean} m" : "")
+                    </td>
+                    <td>
+                        @if (space.Image != null && space.Image.Length > 0)
+                        {
+                            <img class="card-img-top"
+                                 src="@($"data:image/png;base64,{Convert.ToBase64String(space.Image)}")"
+                                 alt="Apartment Image"
+                                 style="height:200px; object-fit:cover;" />
+                        }
+                        else
+                        {
+                            <div class="card-img-top text-center p-5 bg-light text-muted">
+                                No Image
+                            </div>
+                        }
+                    </td>
+                    <td>
+                        <button class="btn btn-warning btn-sm" @onclick="() => EditSpace(space)">Update</button>
+                        <button class="btn btn-danger btn-sm" @onclick="() => DeleteSpace(space.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (editSpace != null)
+{
+    <h4>Edit Space</h4>
+    <EditForm Model="@editSpace" OnValidSubmit="HandleUpdate">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div>
+            <label>Name:</label>
+            <InputText @bind-Value="editSpace.Name" class="form-control" />
+        </div>
+
+        <div>
+            <label>Location:</label>
+            <InputText @bind-Value="editSpace.Location" class="form-control" />
+        </div>
+
+        <div>
+            <label>Description:</label>
+            <InputText @bind-Value="editSpace.Description" class="form-control" />
+        </div>
+
+        <div>
+            <label>Price Per Night:</label>
+            <InputNumber @bind-Value="editSpace.PricePerNight" class="form-control" />
+        </div>
+
+        <div class="form-check">
+            <InputCheckbox @bind-Value="editSpace.IsAvailable" class="form-check-input" />
+            <label class="form-check-label">Available</label>
+        </div>
+
+        <div class="form-check">
+            <InputCheckbox @bind-Value="editSpace.HasElectricity" class="form-check-input" />
+            <label class="form-check-label">Has Electricity</label>
+        </div>
+
+        <div>
+            <label>Meters From Toilet:</label>
+            <InputNumber @bind-Value="editSpace.MetersFromToilet" class="form-control" />
+        </div>
+
+        <div>
+            <label>Meters From Pool:</label>
+            <InputNumber @bind-Value="editSpace.MetersFromPool" class="form-control" />
+        </div>
+
+        <div>
+            <label>Meters From Playground:</label>
+            <InputNumber @bind-Value="editSpace.MetersFromPlayground" class="form-control" />
+        </div>
+
+        <div>
+            <label>Meters From Ocean:</label>
+            <InputNumber @bind-Value="editSpace.MetersFromOcean" class="form-control" />
+        </div>
+
+        <div>
+            <ImageUpload Label="Cottage Image"
+                         InputId="cottageimage"
+                         OnImageSelected="HandleSpaceImage" />
+        </div>
+
+        <button type="submit" class="btn btn-success">Save Changes</button>
+        <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+    </EditForm>
+}
+
+@code {
+    private List<SpaceResponseDto> spaces;
+    private CreateSpaceDto editSpace;
+    private Guid editingSpaceId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        spaces = await Http.GetFromJsonAsync<List<SpaceResponseDto>>("api/space");
+    }
+
+    private async Task DeleteSpace(Guid spaceId)
+    {
+        var response = await Http.DeleteAsync($"api/space/{spaceId}");
+        if (response.IsSuccessStatusCode)
+        {
+            spaces = spaces.Where(s => s.Id != spaceId).ToList();
+        }
+    }
+
+    private void EditSpace(SpaceResponseDto space)
+    {
+        editingSpaceId = space.Id;
+        editSpace = new CreateSpaceDto
+        {
+            CampsiteId = space.CampsiteId,
+            Name = space.Name,
+            Location = space.Location,
+            Description = space.Description,
+            HasElectricity = space.HasElectricity,
+            MetersFromToilet = space.MetersFromToilet,
+            MetersFromPool = space.MetersFromPool,
+            MetersFromPlayground = space.MetersFromPlayground,
+            MetersFromOcean = space.MetersFromOcean,
+            IsAvailable = space.IsAvailable,
+            PricePerNight = space.PricePerNight,
+            Image = space.Image
+        };
+    }
+
+    private async Task HandleUpdate()
+    {
+        var response = await Http.PutAsJsonAsync($"api/space/{editingSpaceId}", editSpace);
+        if (response.IsSuccessStatusCode)
+        {
+            var index = spaces.FindIndex(s => s.Id == editingSpaceId);
+            if (index != -1)
+            {
+                spaces[index] = new SpaceResponseDto(
+                    editingSpaceId,
+                    editSpace.CampsiteId,
+                    spaces[index].Campsite, // this remains unchanged
+                    editSpace.Name,
+                    editSpace.Location,
+                    editSpace.Description,
+                    editSpace.HasElectricity,
+                    editSpace.MetersFromToilet,
+                    editSpace.MetersFromPool,
+                    editSpace.MetersFromPlayground,
+                    editSpace.MetersFromOcean,
+                    editSpace.IsAvailable,
+                    editSpace.PricePerNight,
+                    editSpace.Image
+                );
+            }
+            editSpace = null;
+        }
+    }
+
+    private void CancelEdit()
+    {
+        editSpace = null;
+    }
+
+    private void HandleSpaceImage(byte[] imageBytes)
+    {
+        editSpace.Image = imageBytes;
+    }
+}
