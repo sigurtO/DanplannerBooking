@@ -1,0 +1,111 @@
+﻿@page "/user-space"
+
+@using DanplannerBooking.Application.Dtos.Space
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h3>UserSpace</h3>
+
+<h3>Available Spaces</h3>
+
+@if (spaces == null)
+{
+ <p>Loading spaces...</p>
+}
+else if (spaces.Count ==0)
+{
+ <p>No spaces found.</p>
+}
+else
+{
+ <div class="row">
+ @foreach (var space in spaces)
+ {
+ <div class="col-md-6 mb-4">
+ <div class="card shadow-sm">
+ <div class="row g-0">
+ <div class="col-md-4">
+ @if (space.Image != null && space.Image.Length >0)
+ {
+ <img class="card-img-top"
+ src="@($"data:image/png;base64,{Convert.ToBase64String(space.Image)}")"
+ alt="Space Image"
+ style="height:200px; object-fit:cover;" />
+ }
+ else
+ {
+ <div class="card-img-top text-center p-5 bg-light text-muted">
+ No Image
+ </div>
+ }
+ </div>
+ <div class="col-md-8">
+ <div class="card-body">
+ <h5 class="card-title">@space.Name</h5>
+ <p class="card-text">
+ <strong>Location:</strong> @space.Location<br />
+ <strong>Description:</strong> @space.Description<br />
+ <strong>Price:</strong> @space.PricePerNight.ToString("C")<br />
+ <strong>Availability:</strong> @(space.IsAvailable ? "✅ Available" : "❌ Unavailable")<br />
+ <strong>Electricity:</strong> @(space.HasElectricity ? "⚡ Yes" : "No")<br />
+ <strong>Distances:</strong><br />
+ 🚽 @space.MetersFromToilet m<br />
+ @(space.MetersFromPool.HasValue ? $"🏊 {space.MetersFromPool} m" : "")<br />
+ @(space.MetersFromPlayground.HasValue ? $"🛝 {space.MetersFromPlayground} m" : "")<br />
+ @(space.MetersFromOcean.HasValue ? $"🌊 {space.MetersFromOcean} m" : "")
+ </p>
+ <button class="btn btn-primary" @onclick="() => NavigateToDetails(space.Id)">View Details</button>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ }
+ </div>
+}
+
+@code {
+ private List<SpaceResponseDto> spaces = new();
+
+ protected override async Task OnInitializedAsync()
+ {
+ var all = await Http.GetFromJsonAsync<List<SpaceResponseDto>>("api/space") ?? new List<SpaceResponseDto>();
+ var campsiteIdString = GetQueryParam(NavigationManager.Uri, "campsiteId");
+ if (!string.IsNullOrEmpty(campsiteIdString) && Guid.TryParse(campsiteIdString, out var campsiteGuid))
+ {
+ spaces = all.Where(s => s.CampsiteId == campsiteGuid).ToList();
+ }
+ else
+ {
+ spaces = all;
+ }
+ }
+
+ private void NavigateToDetails(Guid spaceId)
+ {
+ // Navigate to user-facing booking page for the selected space
+ NavigationManager.NavigateTo($"/user-book-space/{spaceId}");
+ }
+
+ private static string? GetQueryParam(string uri, string param)
+ {
+ if (string.IsNullOrEmpty(uri)) return null;
+ var q = new Uri(uri).Query;
+ if (string.IsNullOrEmpty(q)) return null;
+ var pairs = q.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries);
+ foreach (var p in pairs)
+ {
+ var kv = p.Split('=',2);
+ if (kv.Length >=1)
+ {
+ var key = Uri.UnescapeDataString(kv[0]);
+ if (string.Equals(key, param, StringComparison.OrdinalIgnoreCase))
+ {
+ var value = kv.Length ==2 ? Uri.UnescapeDataString(kv[1]) : string.Empty;
+ return value;
+ }
+ }
+ }
+ return null;
+ }
+}

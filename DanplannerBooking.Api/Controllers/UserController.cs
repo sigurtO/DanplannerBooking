@@ -77,7 +77,24 @@ namespace DanplannerBooking.Api.Controllers
             return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, null);
         }
 
+        [AllowAnonymous]
+        [HttpPost("register")]
+        public async Task<ActionResult> Register([FromBody] RegisterUserDto dto)
+        {
+            var user = new User
+            {
+                Name = dto.Name,
+                Email = dto.Email,
+                Phone = dto.Phone,
+                Country = dto.Country,
+                Language = dto.Language,
+                Role = "User", // Tving altid normal bruger her
+                Password = PasswordHasher.HashPassword(dto.Password)
+            };
 
+            await _userRepository.CreateAsync(user);
+            return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, null);
+        }
 
         //Put api/user/me
         [HttpPut("me")] //Update user by id (non admin) //not used for edit profile
