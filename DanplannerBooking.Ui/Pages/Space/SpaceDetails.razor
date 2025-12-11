@@ -179,7 +179,7 @@ else
         var response = await Http.DeleteAsync($"api/space/{spaceId}");
         if (response.IsSuccessStatusCode)
         {
-            NavigationManager.NavigateTo("/allListings");
+            NavigationManager.NavigateTo("/allSpaces");
         }
     }
 

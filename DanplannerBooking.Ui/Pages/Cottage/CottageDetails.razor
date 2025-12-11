@@ -62,6 +62,23 @@ else
 @if (editCottage != null)
 {
     <h4>Edit Cottage</h4>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Error!</strong> @errorMessage
+            <button type="button" class="btn-close" @onclick="ClearError" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <strong>Success!</strong> @successMessage
+            <button type="button" class="btn-close" @onclick="ClearSuccess" aria-label="Close"></button>
+        </div>
+    }
+
     <EditForm Model="@editCottage" OnValidSubmit="HandleUpdate">
         <DataAnnotationsValidator />
         <ValidationSummary />
@@ -131,6 +148,8 @@ else
     [Parameter] public Guid cottageId { get; set; }
     private CottageResponseDto? cottage;
     private CottageUpdateDto? editCottage;
+    private string? errorMessage;
+    private string? successMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -145,6 +164,10 @@ else
     private void EditCottage()
     {
         if (cottage == null) return;
+
+        // Clear any previous messages
+        ClearError();
+        ClearSuccess();
 
         editCottage = new CottageUpdateDto
         {
@@ -168,12 +191,38 @@ else
     {
         if (editCottage == null) return;
 
+        // Clear any previous messages
+        ClearError();
+        ClearSuccess();
+
         var response = await Http.PutAsJsonAsync($"api/cottage/{cottageId}", editCottage);
+        
         if (response.IsSuccessStatusCode)
         {
-            // Refresh cottage details
+            // Refresh cottage details to get the latest data
             cottage = await Http.GetFromJsonAsync<CottageResponseDto>($"api/cottage/{cottageId}");
+            successMessage = "Cottage updated successfully!";
             editCottage = null;
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+        {
+            // Handle concurrency conflict (409)
+            var errorDetails = await response.Content.ReadAsStringAsync();
+            errorMessage = "⚠️ Concurrency Conflict: This cottage has been modified by another user. Please reload the page to see the latest changes and try again.";
+            
+            // Reload the cottage data to show current state
+            cottage = await Http.GetFromJsonAsync<CottageResponseDto>($"api/cottage/{cottageId}");
+            editCottage = null; // Close the edit form
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            errorMessage = "❌ Cottage not found. It may have been deleted.";
+        }
+        else
+        {
+            // Handle other errors
+            var errorDetails = await response.Content.ReadAsStringAsync();
+            errorMessage = $"❌ Update failed ({(int)response.StatusCode}): {errorDetails}";
         }
     }
 
@@ -183,13 +232,20 @@ else
         if (response.IsSuccessStatusCode)
         {
             // Show a message 
-            //NavigationManager.NavigateTo("/cottages-admin");
+            NavigationManager.NavigateTo("/allCottages");
+        }
+        else
+        {
+            var errorDetails = await response.Content.ReadAsStringAsync();
+            errorMessage = $"❌ Delete failed ({(int)response.StatusCode}): {errorDetails}";
         }
     }
 
     private void CancelEdit()
     {
         editCottage = null;
+        ClearError();
+        ClearSuccess();
     }
 
     private void HandleCottageImage(byte[] imageBytes)
@@ -198,5 +254,15 @@ else
         {
             editCottage.Image = imageBytes;
         }
+    }
+
+    private void ClearError()
+    {
+        errorMessage = null;
+    }
+
+    private void ClearSuccess()
+    {
+        successMessage = null;
     }
 }
