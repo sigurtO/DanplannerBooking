@@ -7,6 +7,14 @@
         <span class="custom-file-label">Choose File</span>
     </div>
 
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show mt-2" role="alert">
+            <strong>Error!</strong> @errorMessage
+            <button type="button" class="btn-close" @onclick="ClearError" aria-label="Close"></button>
+        </div>
+    }
+
     @if (ImagePreview != null)
     {
         <div style="margin: 1rem; border: solid black 2px; width: 254px; height: 254px;">
@@ -21,15 +29,28 @@
     [Parameter] public EventCallback<byte[]> OnImageSelected { get; set; }
 
     private string? ImagePreview;
+    private string? errorMessage;
 
     private async Task HandleImageFile(InputFileChangeEventArgs e)
     {
+        // Clear previous error
+        errorMessage = null;
+
         if (e.File != null)
         {
-            if (e.File.Size < 150000) // limit ~150KB
+            const long maxFileSize = 150000; // ~150KB
+
+            if (e.File.Size > maxFileSize)
+            {
+                errorMessage = $"Image is too large! Maximum size is {maxFileSize / 1000}KB. Your image is {e.File.Size / 1000}KB.";
+                ImagePreview = null; // Clear any previous preview
+                return;
+            }
+
+            try
             {
                 using var stream = new MemoryStream();
-                await e.File.OpenReadStream().CopyToAsync(stream);
+                await e.File.OpenReadStream(maxAllowedSize: maxFileSize).CopyToAsync(stream);
                 var imageBytes = stream.ToArray();
 
                 // Image preview
@@ -38,11 +59,16 @@
                 // Event callback to parent
                 await OnImageSelected.InvokeAsync(imageBytes);
             }
-            else
+            catch (Exception ex)
             {
-                // Optional: you could add a parameter for error handling
-                Console.WriteLine("Image too large. Please upload under 150KB.");
+                errorMessage = $"Failed to upload image: {ex.Message}";
+                ImagePreview = null;
             }
         }
+    }
+
+    private void ClearError()
+    {
+        errorMessage = null;
     }
 }

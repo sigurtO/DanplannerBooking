@@ -195,6 +195,12 @@ else
         ClearError();
         ClearSuccess();
 
+        // Debug: Log the RowVersion being sent
+        var rowVersionBase64 = editCottage.RowVersion != null 
+            ? Convert.ToBase64String(editCottage.RowVersion) 
+            : "NULL";
+        Console.WriteLine($"Sending RowVersion: {rowVersionBase64}");
+
         var response = await Http.PutAsJsonAsync($"api/cottage/{cottageId}", editCottage);
         
         if (response.IsSuccessStatusCode)
@@ -208,7 +214,7 @@ else
         {
             // Handle concurrency conflict (409)
             var errorDetails = await response.Content.ReadAsStringAsync();
-            errorMessage = "⚠️ Concurrency Conflict: This cottage has been modified by another user. Please reload the page to see the latest changes and try again.";
+            errorMessage = $"⚠️ Concurrency Conflict: {errorDetails}. The cottage has been modified by another user. The page has been refreshed with the latest data.";
             
             // Reload the cottage data to show current state
             cottage = await Http.GetFromJsonAsync<CottageResponseDto>($"api/cottage/{cottageId}");

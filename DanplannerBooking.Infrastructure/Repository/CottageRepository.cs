@@ -40,7 +40,9 @@ namespace DanplannerBooking.Infrastructure.Repository
             var existingCottage = await _context.Cottages.FindAsync(id);
             if (existingCottage == null) return false;
 
-            _context.Entry(existingCottage).Property("RowVersion").OriginalValue = cottageUpdated.RowVersion;
+            // Set the original RowVersion from the client's view
+            _context.Entry(existingCottage).Property(nameof(Cottage.RowVersion)).OriginalValue = cottageUpdated.RowVersion;
+            
             existingCottage.Name = cottageUpdated.Name;
             existingCottage.Location = cottageUpdated.Location;
             existingCottage.Description = cottageUpdated.Description;
