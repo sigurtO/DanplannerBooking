@@ -38,6 +38,43 @@ namespace DanplannerBooking.Application.Dtos.Cottage
         public byte[] Image { get; set; }
     }
 
+    public class CottageUpdateDto
+    {
+        [Required]
+        public Guid CampsiteId { get; set; }
+
+        public CampsiteResponseDto? Campsite { get; set; } // Navigation property
+
+        [Required]
+        [StringLength(100)]
+        public string Name { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(200)]
+        public string Location { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(1000)]
+        public string Description { get; set; } = string.Empty;
+
+        // Cottage-specific features
+        public bool HasToilet { get; set; }
+        public bool HasShower { get; set; }
+        public bool HasKitchen { get; set; }
+        public bool HasHeating { get; set; }
+        public bool HasWiFi { get; set; }
+
+        public bool IsAvailable { get; set; } = true;
+
+        [Range(1, 100000, ErrorMessage = "Price per night must be greater than 0.")]
+        public decimal PricePerNight { get; set; }
+
+        public byte[] Image { get; set; }
+
+        [Timestamp]
+        public byte[] RowVersion { get; set; }
+    }
+
     public record CottageResponseDto(
         Guid Id,
         Guid CampsiteId,
@@ -52,6 +89,7 @@ namespace DanplannerBooking.Application.Dtos.Cottage
         bool HasWiFi,
         bool IsAvailable,
         decimal PricePerNight,
-        byte[] Image
+        byte[] Image,
+        byte[] RowVersion
     );
 }

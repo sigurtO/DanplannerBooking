@@ -64,6 +64,7 @@ namespace DanplannerBooking.Infrastructure.Repository
             if (existingBooking == null) return false;
 
             existingBooking.UserId = updatedBooking.UserId;
+            existingBooking.Name = updatedBooking.Name;
             existingBooking.NumberOfPeople = updatedBooking.NumberOfPeople;
             existingBooking.DateStart = updatedBooking.DateStart;
             existingBooking.DateEnd = updatedBooking.DateEnd;
@@ -81,7 +82,7 @@ namespace DanplannerBooking.Infrastructure.Repository
                 .Include(b => b.User)
                 .Select(b => new BookingDashboardDto(
                     b.Id,
-                    b.User.Name,
+                    b.Name,
                     b.DateStart,
                     b.DateEnd
                 ))
@@ -100,6 +101,17 @@ namespace DanplannerBooking.Infrastructure.Repository
                 .ToListAsync();
         }
 
+        public async Task<List<BookingRangeDto>> GetBookedDateRangesForSpaceAsync(Guid spaceId)
+        {
+            return await _context.Bookings
+                .Where(b => b.SpaceId == spaceId)
+                .Select(b => new BookingRangeDto
+                {
+                    Start = b.DateStart.Date,
+                    End = b.DateEnd.Date
+                })
+                .ToListAsync();
+        }
 
 
     }

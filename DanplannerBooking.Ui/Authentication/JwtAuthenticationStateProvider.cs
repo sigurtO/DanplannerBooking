@@ -47,12 +47,18 @@ namespace DanplannerBooking.Ui.Authentication
 
         public async Task MarkUserAsLoggedOut()
         {
+            // Fjern token fra localstorage
             await _localStorage.RemoveItemAsync("authToken");
 
+            // Nulstil HttpClient Authorization-header
+            _http.DefaultRequestHeaders.Authorization = null;
+
+            // Fortæl hele UI'et at vi nu er anonyme
             NotifyAuthenticationStateChanged(
                 Task.FromResult(new AuthenticationState(_anonymous))
             );
         }
+
 
         private ClaimsPrincipal CreateClaimsPrincipalFromJwt(string token)
         {

@@ -1,7 +1,9 @@
-﻿using DanplannerBooking.Application.Interfaces;
+﻿using DanplannerBooking.Application.Dtos.Cottage;
+using DanplannerBooking.Application.Interfaces;
 using DanplannerBooking.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using DanplannerBooking.Application.Dtos.Cottage;
+using Microsoft.EntityFrameworkCore;
 
 namespace DanplannerBooking.Api.Controllers
 {
@@ -34,6 +36,7 @@ namespace DanplannerBooking.Api.Controllers
             return Ok(cottage);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> CreateCottage([FromBody] CottageDto cottageDto)
         {
@@ -57,37 +60,46 @@ namespace DanplannerBooking.Api.Controllers
             return CreatedAtAction(nameof(GetCottageById), new { id = newCottage.Id }, null);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
-        // [Authorize(Policy = "AdminOnly")]
-        public async Task<IActionResult> UpdateCottage(Guid id, [FromBody] CottageDto updatedDto)
+        public async Task<IActionResult> UpdateCottage(Guid id, [FromBody] CottageUpdateDto cottageDto)
         {
-            var updatedCottage = new Cottage
+            var cottageToUpdate = new Cottage
             {
-                CampsiteId = updatedDto.CampsiteId,
-                Name = updatedDto.Name,
-                Location = updatedDto.Location,
-                Description = updatedDto.Description,
-                HasToilet = updatedDto.HasToilet,
-                HasShower = updatedDto.HasShower,
-                HasKitchen = updatedDto.HasKitchen,
-                HasHeating = updatedDto.HasHeating,
-                HasWiFi = updatedDto.HasWiFi,
-                IsAvailable = updatedDto.IsAvailable,
-                PricePerNight = updatedDto.PricePerNight,
-                Image = updatedDto.Image
+                Id = id,
+                Name = cottageDto.Name,
+                Location = cottageDto.Location,
+                Description = cottageDto.Description,
+                HasToilet = cottageDto.HasToilet,
+                HasShower = cottageDto.HasShower,
+                HasKitchen = cottageDto.HasKitchen,
+                HasHeating = cottageDto.HasHeating,
+                HasWiFi = cottageDto.HasWiFi,
+                IsAvailable = cottageDto.IsAvailable,
+                PricePerNight = cottageDto.PricePerNight,
+                Image = cottageDto.Image,
+                CampsiteId = cottageDto.CampsiteId,
+                RowVersion = cottageDto.RowVersion // client must send this back
             };
 
-            var result = await _cottageRepository.UpdateAsync(id, updatedCottage);
-            if (!result)
+            try
             {
-                return NotFound();
+                var success = await _cottageRepository.UpdateAsync(id, cottageToUpdate);
+                if (!success)
+                    return NotFound();
+
+                return NoContent(); // update succeeded
             }
-            return NoContent();
+            catch (DbUpdateConcurrencyException)
+            {
+                // return HTTP 409 Conflict if rowversion mismatch
+                return Conflict("The cottage was modified by another user. Please reload and try again.");
+            }
         }
 
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
-        // [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> DeleteCottage(Guid id)
         {
             var result = await _cottageRepository.DeleteAsync(id);

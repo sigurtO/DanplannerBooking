@@ -7,6 +7,7 @@ using System.IdentityModel.Tokens.Jwt;         // JWT token generator
 using System.Security.Claims;                  // Claims (navn, email, rolle osv.)
 using System.Security.Cryptography;            // Bruges til at generere secure refresh tokens
 using System.Text;
+using DanplannerBooking.Domain.Security;
 
 namespace DanplannerBooking.Api.Controllers
 {
@@ -33,8 +34,13 @@ namespace DanplannerBooking.Api.Controllers
             var users = await _userRepository.GetAllAsync();
             var user = users.FirstOrDefault(u => u.Email == request.Email);
 
-            // Simpel validering (ingen hashing endnu)
-            if (user == null || user.Password != request.Password)
+            if (user == null)
+                return Unauthorized("Invalid email or password");
+
+            // Tjek password – understøtter både gamle klartekst og nye hashes
+            var passwordOk = PasswordHasher.VerifyPassword(request.Password, user.Password);
+
+            if (!passwordOk)
                 return Unauthorized("Invalid email or password");
 
             // Genererer access token (JWT)
@@ -60,6 +66,7 @@ namespace DanplannerBooking.Api.Controllers
                 Role = user.Role
             });
         }
+
 
         // -------------------------
         //      REFRESH TOKEN
@@ -154,7 +161,7 @@ namespace DanplannerBooking.Api.Controllers
             using var rng = RandomNumberGenerator.Create();
             rng.GetBytes(bytes);
 
-            return (Convert.ToBase64String(bytes), DateTime.UtcNow.AddDays(1));
+            return (Convert.ToBase64String(bytes), DateTime.UtcNow.AddHours(10));
         }
 
         // Udtrækker claims fra en EXPIRED token (bruges i refresh-flow)

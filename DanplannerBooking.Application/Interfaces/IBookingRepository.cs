@@ -18,6 +18,7 @@ namespace DanplannerBooking.Application.Interfaces
         Task<List<BookingDashboardDto>> GetDashboardDataAsync();
 
         Task<List<BookingRangeDto>> GetBookedDateRangesForCottageAsync(Guid cottageId);
+        Task<List<BookingRangeDto>> GetBookedDateRangesForSpaceAsync(Guid spaceId);
 
     }
 }

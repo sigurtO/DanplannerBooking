@@ -1,7 +1,7 @@
 ﻿@using MudBlazor
 @using DanplannerBooking.Application.Dtos.Booking
 
-<MudDateRangePicker DateRange="SelectedRange"
+<MudDateRangePicker DateRange="@SelectedRange"
                     DateRangeChanged="OnDateRangeChanged"
                     AdditionalDateClassesFunc="GetDayClass"
                     IsDateDisabledFunc="IsDateDisabled"
@@ -10,33 +10,35 @@
                     Class="w-100" />
 
 @code {
-    [Parameter] public DateRange SelectedRange { get; set; }
-    [Parameter] public EventCallback<DateRange> SelectedRangeChanged { get; set; }
+    // 1. Gør denne nullable (?)
+    [Parameter] public DateRange? SelectedRange { get; set; }
+
+    // 2. Opdater EventCallback til også at kunne sende null tilbage (?)
+    [Parameter] public EventCallback<DateRange?> SelectedRangeChanged { get; set; }
 
     [Parameter] public List<BookingRangeDto> UnavailableRanges { get; set; } = new();
 
-    private async Task OnDateRangeChanged(DateRange range)
+    // 3. Opdater metoden til at tage imod DateRange?
+    private async Task OnDateRangeChanged(DateRange? range)
     {
         SelectedRange = range;
         await SelectedRangeChanged.InvokeAsync(range);
     }
 
-    // ---- FARVER (rød / grøn) ----
     private string GetDayClass(DateTime date)
     {
         if (UnavailableRanges == null || UnavailableRanges.Count == 0)
-            return "mud-available-day";   // alt grønt hvis ingen booking ranges
+            return "mud-available-day";
 
         foreach (var range in UnavailableRanges)
         {
             if (date.Date >= range.Start.Date && date.Date <= range.End.Date)
-                return "mud-unavailable-day"; // rød og disabled
+                return "mud-unavailable-day";
         }
 
-        return "mud-available-day"; // ikke booket → grøn
+        return "mud-available-day";
     }
 
-    // ---- DISABLE BOOKEDE DAGE ----
     private bool IsDateDisabled(DateTime date)
     {
         if (UnavailableRanges == null || UnavailableRanges.Count == 0)
@@ -45,7 +47,7 @@
         foreach (var range in UnavailableRanges)
         {
             if (date.Date >= range.Start.Date && date.Date <= range.End.Date)
-                return true; // kan ikke klikkes
+                return true;
         }
 
         return false;

@@ -2,6 +2,7 @@ using DanplannerBooking.Application.Dtos;
 using DanplannerBooking.Application.Dtos.Campsite;
 using DanplannerBooking.Application.Interfaces;
 using DanplannerBooking.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DanplannerBooking.Api.Controllers;
@@ -68,6 +69,7 @@ public class CampsiteController : ControllerBase
     }
 
     // POST: api/campsite
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateCampsiteDto dto)
     {
@@ -93,6 +95,7 @@ public class CampsiteController : ControllerBase
     }
 
     // PUT: api/campsite/{id}
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] CreateCampsiteDto dto)
     {
@@ -118,6 +121,7 @@ public class CampsiteController : ControllerBase
     }
 
     // DELETE: api/campsite/{id}
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {

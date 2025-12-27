@@ -1,5 +1,5 @@
-﻿@page "/book-cottage/{cottageId:guid}"
-@using DanplannerBooking.Application.Dtos.Cottage
+﻿@page "/book-space/{spaceId:guid}"
+@using DanplannerBooking.Application.Dtos.Space
 @using DanplannerBooking.Application.Dtos.AddOn
 @using DanplannerBooking.Application.Dtos.Booking
 @inject HttpClient Http
@@ -7,9 +7,9 @@
 @using MudBlazor
 @attribute [Authorize(Roles = "Admin")]
 
-<h3>Book Your Cottage</h3>
+<h3>Book Your Space</h3>
 
-@if (cottage == null || addOns == null)
+@if (space == null || addOns == null)
 {
     <p>Loading booking form...</p>
 }
@@ -19,9 +19,9 @@ else
         <div class="col-md-8">
             <div class="card mb-4 shadow-sm">
                 <div class="card-body">
-                    <h4>@cottage.Name</h4>
-                    <p><strong>Price Per Night:</strong> @cottage.PricePerNight.ToString("C")</p>
-                    <p><strong>Max Capacity:</strong> 6 people</p>
+                    <h4>@space.Name</h4>
+                    <p><strong>Price Per Night:</strong> @space.PricePerNight.ToString("C")</p>
+                    <p><strong>Location:</strong> @space.Location</p>
 
                     <EditForm Model="@newBooking" OnValidSubmit="SubmitBooking">
                         <DataAnnotationsValidator />
@@ -39,8 +39,8 @@ else
                         </div>
 
                         <div>
-							<label>Name of Booker</label>
-							<InputText @bind-Value="newBooking.Name" class="form-control" />
+                            <label>Name of Booker</label>
+                            <InputText @bind-Value="newBooking.Name" class="form-control" />
                         </div>
 
                         <p>Unavailable ranges: @unavailableRanges.Count</p>
@@ -84,7 +84,7 @@ else
             <div class="card shadow-sm">
                 <div class="card-body">
                     <h5>Booking Summary</h5>
-                    <p><strong>Cottage:</strong> @cottage.Name</p>
+                    <p><strong>Space:</strong> @space.Name</p>
                     <p><strong>Guests:</strong> @newBooking.NumberOfPeople</p>
                     <p><strong>Dates:</strong> @newBooking.DateStart.ToShortDateString() – @newBooking.DateEnd.ToShortDateString()</p>
                     <p><strong>Add-ons:</strong></p>
@@ -107,9 +107,9 @@ else
 }
 
 @code {
-    [Parameter] public Guid cottageId { get; set; }
+    [Parameter] public Guid spaceId { get; set; }
 
-    private CottageResponseDto? cottage;
+    private SpaceResponseDto? space;
     private List<AddOnResponseDto>? addOns;
     private List<UserResponseDto>? adminUsers;
     private Dictionary<Guid, bool> addonSelections = new();
@@ -117,6 +117,7 @@ else
     private List<BookingRangeDto> unavailableRanges = new();
     private string? error;
     private DateRange? _mySelectedRange = null;
+
 
     private async Task OnDateRangeSelected(DateRange? range)
     {
@@ -135,23 +136,23 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        cottage = await Http.GetFromJsonAsync<CottageResponseDto>($"api/cottage/{cottageId}");
+        space = await Http.GetFromJsonAsync<SpaceResponseDto>($"api/space/{spaceId}");
         addOns = await Http.GetFromJsonAsync<List<AddOnResponseDto>>("api/addon");
         adminUsers = await Http.GetFromJsonAsync<List<UserResponseDto>>("api/user/admin");
-        unavailableRanges = await Http.GetFromJsonAsync<List<BookingRangeDto>>($"api/booking/unavailable/{cottageId}");
+        unavailableRanges = await Http.GetFromJsonAsync<List<BookingRangeDto>>($"api/booking/unavailable-space/{spaceId}");
 
         foreach (var addon in addOns)
         {
             addonSelections[addon.Id] = false;
         }
 
-        newBooking.CottageId = cottageId;
-		newBooking.Name = cottage.Name;
+        newBooking.SpaceId = spaceId;
+        newBooking.Name = space.Name;
         newBooking.DateStart = DateTime.Today;
         newBooking.DateEnd = DateTime.Today.AddDays(7);
         newBooking.NumberOfPeople = 2;
-        newBooking.UserId = Guid.NewGuid(); // TODO: rigtig bruger
-        newBooking.TotalPrice = cottage.PricePerNight;
+        newBooking.UserId = Guid.NewGuid(); // bliver overskrevet af dropdown
+        newBooking.TotalPrice = space.PricePerNight;
     }
 
     private async Task SubmitBooking()
@@ -161,7 +162,9 @@ else
             .ToList();
 
         var nights = (newBooking.DateEnd - newBooking.DateStart).Days;
-        var basePrice = cottage.PricePerNight * nights;
+        if (nights <= 0) nights = 1;
+
+        var basePrice = space.PricePerNight * nights;
         var addOnTotal = selectedAddOns.Sum(a => a.Price);
         newBooking.TotalPrice = basePrice + addOnTotal;
 

@@ -1,4 +1,6 @@
-﻿namespace DanplannerBooking.Domain.Entities
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace DanplannerBooking.Domain.Entities
 {
     public class Cottage
     {
@@ -10,6 +12,7 @@
 
         public string Name { get; set; } = default!;
         public string Location { get; set; } = default!;      // område
+
         public string Description { get; set; } = default!;
 
         // Editor layout coords (SVG pixel space)
@@ -27,5 +30,8 @@
         public decimal PricePerNight { get; set; }
 
         public byte[] Image { get; set; }
+
+        [Timestamp]
+        public byte[] RowVersion { get; set; }
     }
 }

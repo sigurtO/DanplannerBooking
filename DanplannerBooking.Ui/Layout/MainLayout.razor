@@ -1,16 +1,222 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
+
+<header>
+ <nav class="navbar" role="navigation" aria-label="Hovednavigation">
+ <p class="brand">Danline</p>
+
+ <ul class="nav-menu">
+ <li class="nav-item"><a class="nav-link" href="#Danplanner">Danplanner</a></li>
+ <li class="nav-item"><a class="nav-link" href="#Danbase">Danbase</a></li>
+ <li class="nav-item"><a class="nav-link" href="#Kundereferancer">KundeReferancer</a></li>
+
+ <!-- Booking: go to /my-bookings for authenticated users, otherwise to public cottages -->
+ <AuthorizeView>
+ <Authorized>
+ <li class="nav-item"><a class="nav-link" href="/my-bookings">Booking</a></li>
+ </Authorized>
+ <NotAuthorized>
+ <li class="nav-item"><a class="nav-link" href="/user-cottages">Booking</a></li>
+ </NotAuthorized>
+ </AuthorizeView>
+
+ <!-- Show logout button when authenticated, otherwise show login link -->
+ <AuthorizeView>
+ <Authorized>
+ <li class="nav-item">
+ <LogoutButton CssClass="nav-link" ButtonText="Log ud" RedirectUrl="/" />
+ </li>
+ </Authorized>
+ <NotAuthorized>
+ <li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
+ </NotAuthorized>
+ </AuthorizeView>
+ </ul>
+
+ <button class="burger" aria-label="Åben menu" aria-expanded="false" aria-controls="main-nav">
+ <span class="bar"></span>
+ <span class="bar"></span>
+ <span class="bar"></span>
+ </button>
+ </nav>
+
+<style>
+ :root {
+ --header-height:60px; /* juster efter behov */
+ --nav-bg: #fff;
+ --btn-bg: #656565;
+ --accent: #005795;
+ }
+
+ /* Header / nav */
+ header { position: fixed; top:0; left:0; right:0; z-index:1000; }
+ .navbar {
+ height: var(--header-height);
+ display: flex;
+ align-items: center;
+ justify-content: space-between;
+ background: var(--nav-bg);
+ padding:01rem;
+ }
+ .brand { color: #f4f4f4; font-size:1.5rem; margin:0; }
+
+ /* Desktop menu */
+ .nav-menu {
+ display: flex;
+ gap:0;
+ list-style: none;
+ margin:0;
+ padding:0;
+ align-items: center;
+ }
+ .nav-item {}
+ .nav-link {
+ display: inline-block;
+ padding:0.8rem1.2rem;
+ text-decoration: none;
+ background: var(--btn-bg);
+ color: #f4f4f4;
+ border-radius:4px;
+ margin-left:0.4rem;
+ }
+ .nav-link:hover { background: #454545; }
+
+ /* Burger (hidden desktop) */
+ .burger {
+ display: none;
+ background: transparent;
+ border:0;
+ padding:0.3rem;
+ cursor: pointer;
+ }
+ .burger .bar {
+ display: block;
+ width:25px;
+ height:3px;
+ margin:5px0;
+ transition: transform0.3s, opacity0.3s;
+ background: #f4f4f4;
+ }
+ .burger.active .bar:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+ .burger.active .bar:nth-child(2) { opacity:0; }
+ .burger.active .bar:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+
+ /* MOBILE: menu slides down from top */
+ @@media (max-width:840px) {
+ .burger { display: block; }
+
+ /* hide desktop inline menu visual (but keep it in DOM for accessibility) */
+ .nav-menu {
+ position: fixed;
+ left:0;
+ right:0;
+ top:0;
+ transform: translateY(-110%);
+ transition: transform0.35s ease-in-out;
+ flex-direction: column;
+ padding-top: calc(var(--header-height) +12px);
+ gap:12px;
+ background: var(--btn-bg);
+ z-index:999;
+ }
+
+ /* menu visible -> slide down to just under header */
+ .nav-menu.active {
+ transform: translateY(var(--header-height));
+ }
+
+ .nav-link {
+ width:100%;
+ padding:1rem0;
+ border-radius:0;
+ margin:0;
+ }
+ }
+
+ /* Give page content breathing room under fixed header */
+ main { padding-top: calc(var(--header-height) +1rem); }
+</style>
+
+<script>
+ document.addEventListener("DOMContentLoaded", function () {
+ const hamburger = document.querySelector(".burger");
+ const navMenu = document.querySelector(".nav-menu");
+ const navLinks = document.querySelectorAll(".nav-link");
+ const header = document.querySelector("header");
+
+ if (!hamburger || !navMenu) return; // safety
+
+ // Toggle burger/menu
+ hamburger.addEventListener("click", () => {
+ const expanded = hamburger.classList.toggle("active");
+ navMenu.classList.toggle("active");
+ hamburger.setAttribute("aria-expanded", expanded ? "true" : "false");
+ });
+
+ // When clicking a nav link: smooth scroll with header offset and close menu
+ navLinks.forEach(link => {
+ link.addEventListener("click", (e) => {
+ // If the href is an anchor on the same page
+ const href = link.getAttribute("href");
+ if (href && href.startsWith("#")) {
+ e.preventDefault();
+ const target = document.querySelector(href);
+ if (target) {
+ // compute offset considering header height (in case header height changes with CSS)
+ const headerRect = header.getBoundingClientRect();
+ const headerHeight = headerRect.height;
+ // top relative to document
+ const targetY = target.getBoundingClientRect().top + window.pageYOffset;
+ const scrollTo = targetY - headerHeight -8; // -8px little breathing space
+
+ window.scrollTo({ top: scrollTo, behavior: "smooth" });
+ }
+ }
+ // close mobile menu (if open)
+ hamburger.classList.remove("active");
+ navMenu.classList.remove("active");
+ hamburger.setAttribute("aria-expanded", "false");
+ });
+ });
+
+ // Optional: close menu when clicking outside
+ document.addEventListener("click", (e) => {
+ if (!navMenu.classList.contains("active")) return;
+ const withinNav = e.target.closest(".navbar");
+ if (!withinNav) {
+ navMenu.classList.remove("active");
+ hamburger.classList.remove("active");
+ hamburger.setAttribute("aria-expanded", "false");
+ }
+ });
+
+ // Optional: handle Escape key to close menu
+ document.addEventListener("keydown", (e) => {
+ if (e.key === "Escape" && navMenu.classList.contains("active")) {
+ navMenu.classList.remove("active");
+ hamburger.classList.remove("active");
+ hamburger.setAttribute("aria-expanded", "false");
+ }
+ });
+ });
+</script>
+</header>
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+ <AuthorizeView Roles="Admin">
+ <Authorized>
+ <div class="sidebar">
+ <NavMenu />
+ </div>
+ </Authorized>
+ </AuthorizeView>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+ <main>
+ <div class="top-row px-4">
+ <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+ </div>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
+ <article class="content px-4">
+ @Body
+ </article>
+ </main>
 </div>

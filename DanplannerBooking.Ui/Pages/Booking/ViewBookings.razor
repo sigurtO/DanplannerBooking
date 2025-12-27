@@ -1,0 +1,384 @@
+﻿@page "/booking-admin"
+@using DanplannerBooking.Application.Dtos.Booking
+@using DanplannerBooking.Application.Dtos.AddOn
+@using MudBlazor
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+<h3>All Bookings</h3>
+
+@if (bookings == null)
+{
+    <p>Loading bookings...</p>
+}
+else if (bookings.Count == 0)
+{
+    <p>No bookings found.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>User</th>
+                <th>Guests</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Total Price</th>
+                <th>Cottage/Space</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var booking in bookings)
+            {
+                <tr>
+                    <td>@booking.Name</td>
+                    <td>@booking.User?.Name (@booking.User?.Email)</td>
+                    <td>@booking.NumberOfPeople</td>
+                    <td>@booking.DateStart.ToShortDateString()</td>
+                    <td>@booking.DateEnd.ToShortDateString()</td>
+                    <td>@booking.TotalPrice.ToString("C")</td>
+                    <td>
+                        @if (booking.Cottage != null)
+                        {
+                            <span>Cottage: @booking.Cottage.Name</span>
+                        }
+                        else if (booking.Space != null)
+                        {
+                            <span>Space: @booking.Space.Name</span>
+                        }
+                    </td>
+                    <td>
+                        <button class="btn btn-warning btn-sm" @onclick="() => EditBooking(booking)">Update</button>
+                        <button class="btn btn-danger btn-sm" @onclick="() => DeleteBooking(booking.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (editBooking != null)
+{
+    <div class="mt-4 p-3 border rounded">
+        <h4>Edit Booking</h4>
+        <EditForm Model="@editBooking" OnValidSubmit="HandleUpdate">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label class="form-label">Name:</label>
+                <InputText @bind-Value="editBooking.Name" class="form-control" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Number of People:</label>
+                <InputNumber @bind-Value="editBooking.NumberOfPeople" class="form-control" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Booking Dates:</label>
+                <MudDateRangePicker DateRange="BookingRange"
+                                    DateRangeChanged="OnDateRangeChanged"
+                                    IsDateDisabledFunc="IsDateDisabled"
+                                    AdditionalDateClassesFunc="GetDayClass"
+                                    PickerVariant="PickerVariant.Static"
+                                    Variant="Variant.Outlined"
+                                    Class="w-100" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Add-ons:</label>
+                @if (addOns != null && addOns.Any())
+                {
+                    @foreach (var addon in addOns)
+                    {
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input"
+                                   id="@($"addon-{addon.Id}")"
+                                   @bind="addonSelections[addon.Id]" />
+                            <label class="form-check-label" for="@($"addon-{addon.Id}")">
+                                <strong>@addon.Name</strong> - @addon.Description (@addon.Price.ToString("C"))
+                            </label>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p>No add-ons available.</p>
+                }
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Total Price:</label>
+                <p><strong>@editBooking.TotalPrice.ToString("C")</strong></p>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success">Save Changes</button>
+                <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+            </div>
+        </EditForm>
+    </div>
+}
+
+@code {
+    private List<BookingResponseDto> bookings = new();
+    private BookingDto editBooking;
+    private Guid editingBookingId;
+    private List<BookingRangeDto> unavailableRanges = new();
+    private List<AddOnResponseDto> addOns = new();
+    private Dictionary<Guid, bool> addonSelections = new();
+    private BookingResponseDto originalBooking;
+
+    private DateRange BookingRange
+    {
+        get => new DateRange(editBooking?.DateStart ?? DateTime.Today, editBooking?.DateEnd ?? DateTime.Today);
+        set
+        {
+            if (editBooking != null)
+            {
+                editBooking.DateStart = value.Start ?? DateTime.Today;
+                editBooking.DateEnd = value.End ?? DateTime.Today;
+                RecalculatePrice();
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBookings();
+        await LoadAddOns();
+    }
+
+    private async Task LoadBookings()
+    {
+        try
+        {
+            bookings = await Http.GetFromJsonAsync<List<BookingResponseDto>>("api/booking") ?? new();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading bookings: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task LoadAddOns()
+    {
+        try
+        {
+            addOns = await Http.GetFromJsonAsync<List<AddOnResponseDto>>("api/addon") ?? new();
+            foreach (var addon in addOns)
+                addonSelections[addon.Id] = false;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading add-ons: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task DeleteBooking(Guid bookingId)
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"api/booking/{bookingId}");
+            if (response.IsSuccessStatusCode)
+            {
+                bookings = bookings.Where(b => b.Id != bookingId).ToList();
+                Snackbar.Add("Booking deleted successfully", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Failed to delete booking", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error deleting booking: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async void EditBooking(BookingResponseDto booking)
+    {
+        try
+        {
+            originalBooking = booking;
+            editingBookingId = booking.Id;
+            editBooking = new BookingDto
+            {
+                UserId = booking.UserId,
+                Name = booking.Name,
+                NumberOfPeople = booking.NumberOfPeople,
+                DateStart = booking.DateStart,
+                DateEnd = booking.DateEnd,
+                TotalPrice = booking.TotalPrice,
+                CottageId = booking.CottageId,
+                SpaceId = booking.SpaceId
+            };
+
+            // Load unavailable ranges for this unit
+            unavailableRanges = new();
+            if (booking.CottageId.HasValue)
+            {
+                unavailableRanges = await Http.GetFromJsonAsync<List<BookingRangeDto>>($"api/booking/unavailable/{booking.CottageId.Value}") ?? new();
+            }
+            else if (booking.SpaceId.HasValue)
+            {
+                unavailableRanges = await Http.GetFromJsonAsync<List<BookingRangeDto>>($"api/booking/unavailable/{booking.SpaceId.Value}") ?? new();
+            }
+
+            // Set add-on selections
+            foreach (var addon in addOns)
+            {
+                addonSelections[addon.Id] = booking.AddOnIds?.Contains(addon.Id) ?? false;
+            }
+
+            RecalculatePrice();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading booking details: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task HandleUpdate()
+    {
+        try
+        {
+            RecalculatePrice();
+
+            var selectedAddOns = addonSelections.Where(kvp => kvp.Value).Select(kvp => kvp.Key).ToList();
+            var updateDto = new BookingCreateCottageDto
+            {
+                UserId = editBooking.UserId,
+                Name = editBooking.Name,
+                NumberOfPeople = editBooking.NumberOfPeople,
+                DateStart = editBooking.DateStart,
+                DateEnd = editBooking.DateEnd,
+                CottageId = editBooking.CottageId,
+                SpaceId = editBooking.SpaceId,
+                AddOnIds = selectedAddOns
+            };
+
+            var response = await Http.PutAsJsonAsync($"api/booking/{editingBookingId}", updateDto);
+            if (response.IsSuccessStatusCode)
+            {
+                var index = bookings.FindIndex(b => b.Id == editingBookingId);
+                if (index != -1)
+                {
+                    // Reload the booking to get updated data
+                    var updatedBooking = await Http.GetFromJsonAsync<BookingResponseDto>($"api/booking/{editingBookingId}");
+                    if (updatedBooking != null)
+                    {
+                        bookings[index] = updatedBooking;
+                    }
+                }
+                
+                editBooking = null;
+                editingBookingId = Guid.Empty;
+                Snackbar.Add("Booking updated successfully", Severity.Success);
+                await LoadBookings(); // Reload to ensure data is fresh
+            }
+            else
+            {
+                Snackbar.Add("Failed to update booking", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error updating booking: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void CancelEdit()
+    {
+        editBooking = null;
+        editingBookingId = Guid.Empty;
+        unavailableRanges.Clear();
+    }
+
+    private void OnDateRangeChanged(DateRange newRange)
+    {
+        BookingRange = newRange;
+    }
+
+    // ---- Price Calculation ----
+    private void RecalculatePrice()
+    {
+        if (editBooking == null || originalBooking == null) return;
+
+        var nights = (editBooking.DateEnd - editBooking.DateStart).Days;
+        if (nights <= 0)
+        {
+            editBooking.TotalPrice = 0;
+            return;
+        }
+
+        decimal basePrice = 0;
+
+        if (originalBooking.Cottage != null)
+        {
+            basePrice = originalBooking.Cottage.PricePerNight * nights;
+        }
+        else if (originalBooking.Space != null)
+        {
+            basePrice = originalBooking.Space.PricePerNight * nights;
+        }
+
+        var addOnTotal = addOns.Where(a => addonSelections.ContainsKey(a.Id) && addonSelections[a.Id])
+                               .Sum(a => a.Price);
+
+        editBooking.TotalPrice = basePrice + addOnTotal;
+    }
+
+    // ---- Date Picker Helpers ----
+    private string GetDayClass(DateTime date)
+    {
+        if (unavailableRanges == null || unavailableRanges.Count == 0)
+            return "mud-available-day";
+
+        // Check if date is within current booking range (should be available)
+        if (editingBookingId != Guid.Empty && 
+            editBooking != null &&
+            date.Date >= editBooking.DateStart.Date && 
+            date.Date <= editBooking.DateEnd.Date)
+        {
+            return "mud-available-day";
+        }
+
+        // Check if date overlaps with other bookings
+        foreach (var range in unavailableRanges)
+        {
+            if (date.Date >= range.Start.Date && date.Date <= range.End.Date)
+                return "mud-unavailable-day";
+        }
+        
+        return "mud-available-day";
+    }
+
+    private bool IsDateDisabled(DateTime date)
+    {
+        if (unavailableRanges == null || unavailableRanges.Count == 0)
+            return false;
+
+        // Allow dates within current booking range
+        if (editingBookingId != Guid.Empty && 
+            editBooking != null &&
+            date.Date >= editBooking.DateStart.Date && 
+            date.Date <= editBooking.DateEnd.Date)
+        {
+            return false;
+        }
+
+        // Disable dates that are in other bookings
+        foreach (var range in unavailableRanges)
+        {
+            if (date.Date >= range.Start.Date && date.Date <= range.End.Date)
+                return true;
+        }
+
+        return false;
+    }
+}

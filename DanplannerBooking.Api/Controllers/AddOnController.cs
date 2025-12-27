@@ -2,7 +2,7 @@
 using DanplannerBooking.Domain.Entities;
 using DanplannerBooking.Application.Dtos.AddOn;
 using Microsoft.AspNetCore.Mvc;
-
+using Microsoft.AspNetCore.Authorization;
 namespace DanplannerBooking.Api.Controllers
 {
     [ApiController]
@@ -34,6 +34,7 @@ namespace DanplannerBooking.Api.Controllers
             return Ok(addOn);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> CreateAddOn([FromBody] AddOnDto addOnDto)
         {
@@ -49,6 +50,7 @@ namespace DanplannerBooking.Api.Controllers
             return CreatedAtAction(nameof(GetAddOnById), new { id = newAddOn.Id }, null);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateAddOn(Guid id, [FromBody] AddOnDto updatedDto)
         {
@@ -68,6 +70,7 @@ namespace DanplannerBooking.Api.Controllers
             return NoContent();
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteAddOn(Guid id)
         {

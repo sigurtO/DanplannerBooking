@@ -1,12 +1,14 @@
 ﻿using DanplannerBooking.Application.Dtos.Booking;
 using DanplannerBooking.Application.Interfaces;
 using DanplannerBooking.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Security.Claims;
 
 namespace DanplannerBooking.Api.Controllers
 {
@@ -21,15 +23,30 @@ namespace DanplannerBooking.Api.Controllers
             _bookingRepository = bookingRepository;
         }
 
-        // --------- DTO til map-viewet ----------
+        // Small DTO for unit list
         public sealed class BookingSummaryForUnitDto
         {
             public Guid Id { get; set; }
             public DateTime DateStart { get; set; }
             public DateTime DateEnd { get; set; }
-            public string UserName { get; set; } = "";
+            public string Name { get; set; }
             public int NumberOfPeople { get; set; }
             public decimal TotalPrice { get; set; }
+        }
+
+        // Small DTO for "my bookings" endpoint
+        public sealed class MyBookingDto
+        {
+            public Guid Id { get; set; }
+            public string Name { get; set; }
+            public int NumberOfPeople { get; set; }
+            public DateTime DateStart { get; set; }
+            public DateTime DateEnd { get; set; }
+            public decimal TotalPrice { get; set; }
+            public Guid? CottageId { get; set; }
+            public string? CottageName { get; set; }
+            public Guid? SpaceId { get; set; }
+            public string? SpaceName { get; set; }
         }
 
         // GET: api/booking
@@ -38,6 +55,38 @@ namespace DanplannerBooking.Api.Controllers
         {
             var bookings = await _bookingRepository.GetAllAsync();
             return Ok(bookings);
+        }
+
+        // GET: api/booking/my
+        [Authorize]
+        [HttpGet("my")]
+        public async Task<IActionResult> GetMyBookings()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized();
+            }
+
+            var all = await _bookingRepository.GetAllAsync();
+            var my = all
+                .Where(b => b.UserId == userId)
+                .Select(b => new MyBookingDto
+                {
+                    Id = b.Id,
+                    Name = b.Name,
+                    NumberOfPeople = b.NumberOfPeople,
+                    DateStart = b.DateStart,
+                    DateEnd = b.DateEnd,
+                    TotalPrice = b.TotalPrice,
+                    CottageId = b.CottageId,
+                    CottageName = b.Cottage?.Name,
+                    SpaceId = b.SpaceId,
+                    SpaceName = b.Space?.Name
+                })
+                .ToList();
+
+            return Ok(my);
         }
 
         // GET: api/booking/{id}
@@ -63,12 +112,9 @@ namespace DanplannerBooking.Api.Controllers
                 return BadRequest("Query parameter 'type' must be 'Space' or 'Cottage'.");
             }
 
-            // Hent alle bookinger (inkl. navigation properties) og sørg for,
-            // at vi ikke crasher, selv hvis repositoriet skulle returnere null.
             var allBookings = (await _bookingRepository.GetAllAsync())?.ToList()
                               ?? new List<Booking>();
 
-            // Hvis der slet ikke er bookinger, returnér bare en tom liste.
             if (!allBookings.Any())
             {
                 return Ok(new List<BookingSummaryForUnitDto>());
@@ -95,7 +141,7 @@ namespace DanplannerBooking.Api.Controllers
                     Id = b.Id,
                     DateStart = b.DateStart,
                     DateEnd = b.DateEnd,
-                    UserName = b.User?.Name ?? string.Empty,
+                    Name = b.Name,
                     NumberOfPeople = b.NumberOfPeople,
                     TotalPrice = b.TotalPrice
                 })
@@ -105,6 +151,7 @@ namespace DanplannerBooking.Api.Controllers
         }
 
         // POST: api/booking
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> CreateBooking([FromBody] BookingCreateCottageDto bookingDto)
         {
@@ -112,35 +159,44 @@ namespace DanplannerBooking.Api.Controllers
             {
                 Id = Guid.NewGuid(),
                 UserId = bookingDto.UserId,
+                Name = bookingDto.Name,
                 NumberOfPeople = bookingDto.NumberOfPeople,
                 DateStart = bookingDto.DateStart,
                 DateEnd = bookingDto.DateEnd,
                 CottageId = bookingDto.CottageId,
                 SpaceId = bookingDto.SpaceId,
-                //BundleId = bookingDto.BundleId
             };
 
             await _bookingRepository.CreateAsync(newBooking);
             return CreatedAtAction(nameof(GetBookingById), new { id = newBooking.Id }, null);
         }
 
-        // PUT: api/booking/{id}
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateBooking(Guid id, [FromBody] BookingDto updatedDto)
+        // DELETE: api/booking/{id}
+        [Authorize]
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteBooking(Guid id)
         {
-            var updatedBooking = new Booking
+            var booking = await _bookingRepository.GetByIdAsync(id);
+            if (booking == null)
             {
-                UserId = updatedDto.UserId,
-                NumberOfPeople = updatedDto.NumberOfPeople,
-                DateStart = updatedDto.DateStart,
-                DateEnd = updatedDto.DateEnd,
-                TotalPrice = updatedDto.TotalPrice,
-                CottageId = updatedDto.CottageId,
-                SpaceId = updatedDto.SpaceId,
-                //BundleId = updatedDto.BundleId
-            };
+                return NotFound();
+            }
 
-            var result = await _bookingRepository.UpdateAsync(id, updatedBooking);
+            // Determine caller identity
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+            Guid? callerId = null;
+            if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out var parsed))
+                callerId = parsed;
+
+            var isAdmin = User.IsInRole("Admin") || (User.FindFirst(ClaimTypes.Role)?.Value == "Admin");
+
+            // Allow deletion if caller is admin or the owner of the booking
+            if (!isAdmin && (!callerId.HasValue || booking.UserId != callerId.Value))
+            {
+                return Forbid();
+            }
+
+            var result = await _bookingRepository.DeleteAsync(id);
             if (!result)
             {
                 return NotFound();
@@ -148,12 +204,25 @@ namespace DanplannerBooking.Api.Controllers
             return NoContent();
         }
 
-        // DELETE: api/booking/{id}
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteBooking(Guid id)
+        // PUT: api/booking/{id}
+        [Authorize(Roles = "Admin")]
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateBooking(Guid id, [FromBody] BookingDto updatedDto)
         {
-            var result = await _bookingRepository.DeleteAsync(id);
-            if (!result)
+            var updatedBooking = new Booking
+            {
+                UserId = updatedDto.UserId,
+                Name = updatedDto.Name,
+                NumberOfPeople = updatedDto.NumberOfPeople,
+                DateStart = updatedDto.DateStart,
+                DateEnd = updatedDto.DateEnd,
+                TotalPrice = updatedDto.TotalPrice,
+                CottageId = updatedDto.CottageId,
+                SpaceId = updatedDto.SpaceId,
+            };
+
+            var updateResult = await _bookingRepository.UpdateAsync(id, updatedBooking);
+            if (!updateResult)
             {
                 return NotFound();
             }
@@ -187,7 +256,6 @@ namespace DanplannerBooking.Api.Controllers
             return Ok(data.Where(b => b.DateEnd.Date == today));
         }
 
-
         [HttpGet("unavailable/{cottageId}")]
         public async Task<IActionResult> GetUnavailableDates(Guid cottageId)
         {
@@ -195,10 +263,12 @@ namespace DanplannerBooking.Api.Controllers
             return Ok(ranges);
         }
 
-
-
-
-
-
+        // GET: api/booking/unavailable-space/{spaceId}
+        [HttpGet("unavailable-space/{spaceId}")]
+        public async Task<IActionResult> GetUnavailableDatesForSpace(Guid spaceId)
+        {
+            var ranges = await _bookingRepository.GetBookedDateRangesForSpaceAsync(spaceId);
+            return Ok(ranges);
+        }
     }
 }
