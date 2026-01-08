@@ -9,8 +9,28 @@
  <li class="nav-item"><a class="nav-link" href="#Danplanner">Danplanner</a></li>
  <li class="nav-item"><a class="nav-link" href="#Danbase">Danbase</a></li>
  <li class="nav-item"><a class="nav-link" href="#Kundereferancer">KundeReferancer</a></li>
- <li class="nav-item"><a class="nav-link" href="#kontakt">Kontakt</a></li>
+
+ <!-- Booking: go to /my-bookings for authenticated users, otherwise to public cottages -->
+ <AuthorizeView>
+ <Authorized>
+ <li class="nav-item"><a class="nav-link" href="/my-bookings">Booking</a></li>
+ </Authorized>
+ <NotAuthorized>
+ <li class="nav-item"><a class="nav-link" href="/user-cottages">Booking</a></li>
+ </NotAuthorized>
+ </AuthorizeView>
+
+ <!-- Show logout button when authenticated, otherwise show login link -->
+ <AuthorizeView>
+ <Authorized>
+ <li class="nav-item">
+ <LogoutButton CssClass="nav-link" ButtonText="Log ud" RedirectUrl="/" />
+ </li>
+ </Authorized>
+ <NotAuthorized>
  <li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
+ </NotAuthorized>
+ </AuthorizeView>
  </ul>
 
  <button class="burger" aria-label="Åben menu" aria-expanded="false" aria-controls="main-nav">

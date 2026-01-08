@@ -45,7 +45,8 @@ else
 
                         <p>Unavailable ranges: @unavailableRanges.Count</p>
 
-                        <BookingDateRangePicker @bind-SelectedRange="BookingRange"
+                        <BookingDateRangePicker SelectedRange="_mySelectedRange"
+                                                SelectedRangeChanged="OnDateRangeSelected"
                                                 UnavailableRanges="unavailableRanges" />
 
                         <div class="mb-3 mt-3">
@@ -115,16 +116,20 @@ else
     private BookingDto newBooking = new();
     private List<BookingRangeDto> unavailableRanges = new();
     private string? error;
+    private DateRange? _mySelectedRange = null;
 
-    // Wrapper omkring DateRange → binder direkte til newBooking
-    private DateRange BookingRange
+    private async Task OnDateRangeSelected(DateRange? range)
     {
-        get => new DateRange(newBooking.DateStart, newBooking.DateEnd);
-        set
+        // 1. Opdater den visuelle state
+        _mySelectedRange = range;
+
+        // 2. Opdater data-modellen (newBooking)
+        if (range != null && range.Start.HasValue && range.End.HasValue)
         {
-            // DET HER BLIVER KALDT, når child-komponenten sender ændringer op
-            newBooking.DateStart = value.Start ?? DateTime.Today;
-            newBooking.DateEnd = value.End ?? DateTime.Today;
+            newBooking.DateStart = range.Start.Value;
+            newBooking.DateEnd = range.End.Value;
+
+
         }
     }
 

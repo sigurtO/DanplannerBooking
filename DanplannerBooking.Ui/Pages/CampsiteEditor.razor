@@ -246,7 +246,7 @@
         {
             // Global JS fra wwwroot/js/map.js
             await JS.InvokeVoidAsync("CampsiteMap.initPanZoom", "#mapContainer", "#campsiteSvg");
-            await JS.InvokeVoidAsync("CampsiteMap.enableDrag", "#campsiteSvg", "g.unit",
+            await JS.InvokeVoidAsync("CampsiteMap.enableDrag", "#campsiteSvg", "g.unit", //calls to map.js
                 DotNetObjectReference.Create(this));
 
             await LoadCampsites();

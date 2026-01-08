@@ -11,7 +11,7 @@
     <div class="alert alert-danger">@errorMessage</div>
 }
 
-<div class="card p-3" style="max-width:400px;">
+<div class="card p-3" style="max-width:400px; margin:0 auto;">
     <input class="form-control mb-2" placeholder="Email" @bind="login.Email" />
     <input class="form-control mb-2" type="password" placeholder="Password" @bind="login.Password" />
 
@@ -95,4 +95,7 @@
     // link to register preserving returnUrl
     var regLink = "/register" + (string.IsNullOrWhiteSpace(returnUrl) ? "" : $"?returnUrl={Uri.EscapeDataString(returnUrl)}");
 }
-<a href="@regLink"> Don't have an account? Register here.</a>
+
+<div class="text-center mt-3">
+    <a href="@regLink">Don't have an account? Register here.</a>
+</div>
