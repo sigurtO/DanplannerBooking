@@ -252,7 +252,7 @@
             await LoadCampsites();
         }
     }
-
+    // ✅ Data loading
     private async Task LoadCampsites()
     {
         try
@@ -352,7 +352,7 @@
 
         StateHasChanged();
     }
-
+    // ✅ Saving layout to database
     private async Task SaveLayout()
     {
         // ekstra sikkerhed i selve metoden
@@ -410,6 +410,7 @@
     }
 
     // ---------- JS → .NET callbacks ----------
+    // ✅ JavaScript interop callbacks
     [JSInvokable]
     public Task OnMarkerMoved(Guid id, int x, int y)
     {

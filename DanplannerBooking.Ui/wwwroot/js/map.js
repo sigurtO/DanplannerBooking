@@ -32,7 +32,7 @@ window.CampsiteMap = (function () {
             vx = vbStart.vx - ux; vy = vbStart.vy - uy; applyVB();
         });
         window.addEventListener("mouseup", () => { isPanning = false; });
-
+        // Mouse wheel for zooming
         svg.addEventListener("wheel", (e) => {
             e.preventDefault();
             const rect = svg.getBoundingClientRect();
@@ -51,6 +51,7 @@ window.CampsiteMap = (function () {
     }
 
     // --- Delegated drag for any <g class="unit"> ---
+    // ✅ Drag & Drop
     function enableDrag(svgSelector, _itemSelector, dotNetRef) {
         const svg = document.querySelector(svgSelector);
         if (!svg) { console.warn("enableDrag: svg not found", svgSelector); return; }
@@ -59,8 +60,8 @@ window.CampsiteMap = (function () {
 
         function clientToSvgPoint(evt) {
             const pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
-            const ctm = svg.getScreenCTM(); if (!ctm) return { x: 0, y: 0 };
-            const p = pt.matrixTransform(ctm.inverse()); return { x: p.x, y: p.y };
+            const ctm = svg.getScreenCTM(); if (!ctm) return { x: 0, y: 0 }; // Get transformation matrix
+            const p = pt.matrixTransform(ctm.inverse()); return { x: p.x, y: p.y }; // Convert to SVG coordinates and return
         }
         function getTranslate(el) {
             const t = el.getAttribute("transform") || "translate(0,0)";
@@ -73,7 +74,7 @@ window.CampsiteMap = (function () {
             if (!unitEl) return;
             e.stopPropagation(); e.preventDefault();
             const id = unitEl.getAttribute("data-id"); if (!id) return;
-            const m = clientToSvgPoint(e);
+            const m = clientToSvgPoint(e); // Convert browser → SVG coords
             const [tx, ty] = getTranslate(unitEl);
             dragging = { el: unitEl, id, startMouse: m, startPos: { x: tx, y: ty } };
         });
@@ -85,6 +86,7 @@ window.CampsiteMap = (function () {
             const dy = m.y - dragging.startMouse.y;
             const nx = Math.round(dragging.startPos.x + dx);
             const ny = Math.round(dragging.startPos.y + dy);
+            // Update visual position immediately
             dragging.el.setAttribute("transform", `translate(${nx},${ny})`);
         });
 
@@ -95,6 +97,7 @@ window.CampsiteMap = (function () {
             const dy = m.y - dragging.startMouse.y;
             const nx = Math.round(dragging.startPos.x + dx);
             const ny = Math.round(dragging.startPos.y + dy);
+            // ✅ Callback to Blazor
             try { await dotNetRef?.invokeMethodAsync?.("OnMarkerMoved", dragging.id, nx, ny); } catch { }
             dragging = null;
         });
@@ -112,9 +115,9 @@ window.CampsiteMap = (function () {
             svg.removeEventListener("click", svg.__cmPickHandler, true);
             svg.__cmPickHandler = null;
         }
-
+        // ✅ Coordinate transformation
         function clientToSvgPoint(evt) {
-            const pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
+            const pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY; // Browser pixel coordinates
             const ctm = svg.getScreenCTM(); if (!ctm) return { x: 0, y: 0 };
             const p = pt.matrixTransform(ctm.inverse());
             return { x: Math.round(p.x), y: Math.round(p.y) };
